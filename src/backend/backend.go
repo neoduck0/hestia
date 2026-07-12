@@ -1,0 +1,410 @@
+package backend
+
+import (
+	"errors"
+	"fmt"
+	"io/fs"
+	"os"
+	"path/filepath"
+	"strings"
+
+	"github.com/charmbracelet/log"
+	"github.com/neoduck0/hestia/src/fsutils"
+)
+
+const (
+	projectName = "Hestia"
+
+	hestiaDirName    = ".hestia"
+	mappingsFileName = "mappings.conf"
+
+	defaultDirPerm  os.FileMode = 0o777
+	defaultFilePerm os.FileMode = 0o666
+)
+
+type Project struct {
+	root string
+
+	groups []group
+}
+
+func NewProject() Project {
+	return Project{}
+}
+
+type Settings struct {
+	DryRun bool
+
+	DefaultOp Op
+	ForceOp   Op
+}
+
+func NewSettings() Settings {
+	return Settings{
+		DefaultOp: DefaultOp,
+	}
+}
+
+type Op string
+
+const (
+	DefaultOp Op = OpSymlink
+
+	OpSymlink Op = "symlink"
+	OpCopy    Op = "copy"
+)
+
+func SetOp(op Op, v *Op) error {
+	switch op {
+	case OpSymlink, OpCopy:
+		*v = op
+		return nil
+	}
+	return fmt.Errorf("invalid operation: %s", op)
+}
+
+func (s *Settings) SetDryRun(b bool) {
+	s.DryRun = b
+}
+
+func (p *Project) findHestiaDir() error {
+	wd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+
+	dir := wd
+	for {
+		candidate := filepath.Join(dir, hestiaDirName)
+		info, err := os.Stat(candidate)
+		if err == nil {
+			if info.IsDir() {
+				p.root = candidate
+				return nil
+			}
+		} else if !errors.Is(err, fs.ErrNotExist) {
+			return err
+		}
+
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			break
+		}
+		dir = parent
+	}
+
+	return errors.New("hestia directory not found")
+}
+
+func (p *Project) writeMappings() error {
+	if err := p.findHestiaDir(); err != nil {
+		return err
+	}
+
+	mappingsPath := filepath.Join(p.root, mappingsFileName)
+	mappingsInfo, err := os.Stat(mappingsPath)
+	if err != nil {
+		return err
+	}
+
+	tempFile, err := os.CreateTemp(p.root, mappingsFileName+".*.tmp")
+	if err != nil {
+		return err
+	}
+	tempPath := tempFile.Name()
+	if err := tempFile.Chmod(mappingsInfo.Mode().Perm()); err != nil {
+		tempFile.Close()
+		os.Remove(tempPath)
+		return err
+	}
+
+	for _, g := range p.groups {
+		if _, err := tempFile.WriteString("[" + g.name + "]\n"); err != nil {
+			tempFile.Close()
+			os.Remove(tempPath)
+			return err
+		}
+
+		for _, m := range g.mappings {
+			line := fmt.Sprintf("%q -> %q\n", m.src, m.dst)
+			if _, err := tempFile.WriteString(line); err != nil {
+				tempFile.Close()
+				os.Remove(tempPath)
+				return err
+			}
+		}
+	}
+
+	if err := tempFile.Close(); err != nil {
+		os.Remove(tempPath)
+		return err
+	}
+
+	if err := os.Rename(tempPath, mappingsPath); err != nil {
+		os.Remove(tempPath)
+		return err
+	}
+
+	return nil
+}
+
+func (p *Project) readMappings(s Settings) error {
+	if err := p.findHestiaDir(); err != nil {
+		return err
+	}
+
+	filePath := filepath.Join(p.root, mappingsFileName)
+	fileBytes, err := os.ReadFile(filePath)
+	if err != nil {
+		return err
+	}
+
+	fileSlice := strings.Split(string(fileBytes), "\n")
+
+	p.groups = []group{}
+
+	var currentGroup *group = nil
+	for _, line := range fileSlice {
+		lineType := ""
+
+		if strings.Contains(line, "[") {
+			lineType = "group"
+		} else if strings.Contains(line, "->") {
+			lineType = "mapping"
+		} else if !(strings.TrimSpace(line) == "") {
+			return fmt.Errorf("bad line in %s: %s", mappingsFileName, line)
+		}
+
+		if lineType == "group" {
+			groupName := strings.Trim(line, "[ ]")
+			if groupName == "" {
+				return fmt.Errorf("malformed group line: %s", line)
+			}
+			p.groups = append(p.groups, newGroup(groupName))
+			currentGroup = &p.groups[len(p.groups)-1]
+		}
+
+		if lineType == "mapping" {
+			if currentGroup == nil {
+				return fmt.Errorf("mapping is without a group: %s", line)
+			}
+
+			err := parseMappingLine(p, s, currentGroup, line)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func parseMappingLine(p *Project, s Settings, group *group, line string) error {
+	src, dst, _ := strings.Cut(line, "->")
+
+	src = strings.TrimSpace(src)
+	dst = strings.TrimSpace(dst)
+
+	src = strings.Trim(src, "\"")
+	dst = strings.Trim(dst, "\"")
+
+	if src == "" || dst == "" {
+		return fmt.Errorf("malformed mapping line: %s", line)
+	}
+
+	mapping, err := newMapping(p, s, src, dst)
+	if err != nil {
+		return err
+	}
+
+	return group.addMapping(p, mapping)
+}
+
+func expandMappingPath(p *Project, s string) (string, error) {
+	if strings.HasPrefix(s, "~") {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return "", err
+		}
+
+		if s == "~" {
+			s = home
+		} else if strings.HasPrefix(s, "~/") || strings.HasPrefix(s, "~\\") {
+			s = filepath.Join(home, s[2:])
+		}
+	}
+
+	if filepath.IsAbs(s) {
+		return filepath.Clean(s), nil
+	}
+
+	root := filepath.Dir(p.root)
+	return filepath.Clean(filepath.Join(root, s)), nil
+}
+
+type group struct {
+	name     string
+	mappings []*mapping
+}
+
+func (g *group) link(p *Project, s Settings) error {
+	log.Debugf("linking group: %v", g.name)
+	for _, m := range g.mappings {
+		err := m.link(p, s)
+		if err != nil {
+			return err
+		}
+	}
+	log.Infof("linked group: %v", g.name)
+	return nil
+}
+
+func (g *group) addMapping(p *Project, m *mapping) error {
+	if err := verifyDst(p, m.dst); err != nil {
+		return err
+	}
+
+	g.mappings = append(g.mappings, m)
+
+	return nil
+}
+
+func newGroup(name string) group {
+	return group{name: name}
+}
+
+type mapping struct {
+	src string
+	dst string
+	op  Op
+}
+
+func (m *mapping) absSrc(p *Project) (string, error) {
+	return expandMappingPath(p, m.src)
+}
+
+func (m *mapping) absDst(p *Project) (string, error) {
+	return expandMappingPath(p, m.dst)
+}
+
+func (m *mapping) link(p *Project, s Settings) error {
+	absSrc, err := m.absSrc(p)
+	if err != nil {
+		return err
+	}
+
+	absDst, err := m.absDst(p)
+	if err != nil {
+		return err
+	}
+
+	fileInfo, err := os.Stat(absSrc)
+	if err != nil {
+		return err
+	}
+
+	files := []string{}
+
+	if fileInfo.IsDir() {
+		files, err = fsutils.FindDirFiles(absSrc)
+		if err != nil {
+			return err
+		}
+	} else {
+		files = append(files, "")
+	}
+
+	if s.DryRun {
+		log.Infof("dry run skipped: %v", m.dst)
+		return nil
+	}
+
+	for _, p := range files {
+		resolvedSrc := ""
+		resolvedDst := ""
+		if !fileInfo.IsDir() {
+			resolvedSrc = absSrc
+			resolvedDst = absDst
+		} else {
+			resolvedSrc = filepath.Join(absSrc, p)
+			resolvedDst = filepath.Join(absDst, p)
+		}
+
+		log.Debugf("making directories: %v", filepath.Dir(resolvedDst))
+		err = os.MkdirAll(filepath.Dir(resolvedDst), defaultDirPerm)
+		if err != nil {
+			return err
+		}
+
+		switch m.op {
+		case OpSymlink:
+			err = fsutils.SymlinkFile(resolvedSrc, resolvedDst)
+		case OpCopy:
+			err = fsutils.CopyFile(resolvedSrc, resolvedDst)
+		default:
+			return fmt.Errorf("unknown operation: %s", m.op)
+		}
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func newMapping(p *Project, s Settings, src, dst string) (*mapping, error) {
+	if err := verifySrc(p, src); err != nil {
+		return nil, err
+	}
+
+	var op Op
+	if s.ForceOp != "" {
+		op = s.ForceOp
+	} else {
+		op = s.DefaultOp
+	}
+
+	return &mapping{
+		src: src,
+		dst: dst,
+		op:  op,
+	}, nil
+}
+
+func verifySrc(p *Project, src string) error {
+	absSrc, err := expandMappingPath(p, src)
+	if err != nil {
+		return err
+	}
+
+	_, err = os.Stat(absSrc)
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return fmt.Errorf("source does not exist: %s", src)
+		}
+		return err
+	}
+
+	return nil
+}
+
+func verifyDst(p *Project, dst string) error {
+	absDst, err := expandMappingPath(p, dst)
+	if err != nil {
+		return err
+	}
+
+	for _, g := range p.groups {
+		for _, m := range g.mappings {
+			d, err := m.absDst(p)
+			if err != nil {
+				return err
+			}
+
+			if d == absDst {
+				return fmt.Errorf("destination is already mapped: %s", dst)
+			}
+		}
+	}
+
+	return nil
+}
