@@ -14,7 +14,23 @@ var rmCmd = &cobra.Command{
 	Short: "",
 	Long:  "",
 	Args:  cobra.NoArgs,
-	Run:   rmRun,
+	Run: func(cmd *cobra.Command, args []string) {
+		group, err := cmd.Flags().GetString("group")
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		if strings.TrimSpace(group) == "" {
+			log.Fatal(errors.New("group is required"))
+		}
+
+		project := backend.NewProject()
+		settings := backend.NewSettings()
+
+		if err = project.Rm(settings, group); err != nil {
+			log.Fatal(err)
+		}
+	},
 }
 
 func init() {
@@ -22,22 +38,4 @@ func init() {
 	rmCmd.MarkFlagRequired("group")
 
 	rootCmd.AddCommand(rmCmd)
-}
-
-func rmRun(cmd *cobra.Command, args []string) {
-	group, err := cmd.Flags().GetString("group")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if strings.TrimSpace(group) == "" {
-		log.Fatal(errors.New("group is required"))
-	}
-
-	project := backend.NewProject()
-	settings := backend.NewSettings()
-
-	if err = project.Rm(settings, group); err != nil {
-		log.Fatal(err)
-	}
 }

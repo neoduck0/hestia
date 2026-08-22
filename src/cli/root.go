@@ -10,10 +10,15 @@ import (
 const appName = "hst"
 
 var rootCmd = &cobra.Command{
-	Use:              appName,
-	Short:            "",
-	Long:             "",
-	PersistentPreRun: rootPersistentPreRun,
+	Use:   appName,
+	Short: "",
+	Long:  "",
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		debug, _ := cmd.Flags().GetBool("debug")
+		if debug {
+			log.SetLevel(log.DebugLevel)
+		}
+	},
 }
 
 func Execute() {
@@ -25,11 +30,4 @@ func Execute() {
 
 func init() {
 	rootCmd.PersistentFlags().BoolP("debug", "d", false, "")
-}
-
-func rootPersistentPreRun(cmd *cobra.Command, args []string) {
-	debug, _ := cmd.Flags().GetBool("debug")
-	if debug {
-		log.SetLevel(log.DebugLevel)
-	}
 }

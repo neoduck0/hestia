@@ -14,7 +14,30 @@ var addCmd = &cobra.Command{
 	Short: "",
 	Long:  "",
 	Args:  cobra.ExactArgs(2),
-	Run:   addRun,
+	Run: func(cmd *cobra.Command, args []string) {
+		group, err := cmd.Flags().GetString("group")
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		skipPortable, err := cmd.Flags().GetBool("skip-portable")
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		if strings.TrimSpace(group) == "" {
+			log.Fatal(errors.New("group is required"))
+		}
+
+		project := backend.NewProject()
+		settings := backend.NewSettings()
+
+		settings.SkipPortable = skipPortable
+
+		if err = project.Add(settings, group, args[0], args[1]); err != nil {
+			log.Fatal(err)
+		}
+	},
 }
 
 func init() {
@@ -24,29 +47,4 @@ func init() {
 	addCmd.Flags().Bool("skip-portable", false, "")
 
 	rootCmd.AddCommand(addCmd)
-}
-
-func addRun(cmd *cobra.Command, args []string) {
-	group, err := cmd.Flags().GetString("group")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	skipPortable, err := cmd.Flags().GetBool("skip-portable")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if strings.TrimSpace(group) == "" {
-		log.Fatal(errors.New("group is required"))
-	}
-
-	project := backend.NewProject()
-	settings := backend.NewSettings()
-
-	settings.SkipPortable = skipPortable
-
-	if err = project.Add(settings, group, args[0], args[1]); err != nil {
-		log.Fatal(err)
-	}
 }
