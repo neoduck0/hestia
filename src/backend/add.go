@@ -1,5 +1,11 @@
 package backend
 
+import (
+	"os"
+	"path/filepath"
+	"strings"
+)
+
 func (p *Project) Add(s Settings, groupName, src, dst string) error {
 	if err := p.readMappings(s); err != nil {
 		return err
@@ -19,7 +25,21 @@ func (p *Project) Add(s Settings, groupName, src, dst string) error {
 		chosenGroup = &p.groups[len(p.groups)-1]
 	}
 
-	newMapping, err := newMapping(p, s, src, dst)
+	newSrc := src
+	newDst := dst
+	if !s.SkipPortable {
+		var err error
+		newSrc, err = portablePath(src)
+		if err != nil {
+			return err
+		}
+		newDst, err = portablePath(dst)
+		if err != nil {
+			return err
+		}
+	}
+
+	newMapping, err := newMapping(p, s, newSrc, newDst)
 	if err != nil {
 		return err
 	}
@@ -33,4 +53,24 @@ func (p *Project) Add(s Settings, groupName, src, dst string) error {
 	}
 
 	return nil
+}
+
+func portablePath(s string) (string, error) {
+	userHome, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+
+	if s == userHome {
+		return "~", nil
+	}
+
+	prefix := filepath.Clean(userHome) + "/"
+
+	newPath := s
+	if strings.HasPrefix(s, prefix) {
+		newPath = strings.Replace(s, prefix, "~/", 1)
+	}
+
+	return newPath, nil
 }
