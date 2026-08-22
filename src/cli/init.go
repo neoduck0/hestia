@@ -11,16 +11,14 @@ var initCmd = &cobra.Command{
 	Short: "",
 	Long:  "",
 	Args:  cobra.NoArgs,
-	Run:   initRun,
+	Run: func(cmd *cobra.Command, args []string) {
+		err := backend.Init()
+		if err != nil {
+			log.Fatal(err)
+		}
+	},
 }
 
 func init() {
 	rootCmd.AddCommand(initCmd)
-}
-
-func initRun(cmd *cobra.Command, args []string) {
-	err := backend.Init()
-	if err != nil {
-		log.Fatal(err)
-	}
 }
