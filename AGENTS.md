@@ -12,3 +12,7 @@
 ## Go
 
 - After modifying any Go files, run `gofumpt -w` on the changed files to ensure they are properly formatted.
+
+## Platform
+
+- This software is only meant for Linux systems.
