@@ -28,6 +28,15 @@ type Project struct {
 	groups []group
 }
 
+func (p *Project) findGroupIndex(groupName string) int {
+	for i := range p.groups {
+		if p.groups[i].name == groupName {
+			return i
+		}
+	}
+	return -1
+}
+
 func NewProject() Project {
 	return Project{}
 }

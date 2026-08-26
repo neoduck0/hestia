@@ -10,15 +10,9 @@ func (p *Project) Add(s Settings, groupName, src, dst string) error {
 	}
 
 	var chosenGroup *group
-
-	for i := range p.groups {
-		if p.groups[i].name == groupName {
-			chosenGroup = &p.groups[i]
-			break
-		}
-	}
-
-	if chosenGroup == nil {
+	if groupIndex := p.findGroupIndex(groupName); groupIndex != -1 {
+		chosenGroup = &p.groups[groupIndex]
+	} else {
 		p.groups = append(p.groups, newGroup(groupName))
 		chosenGroup = &p.groups[len(p.groups)-1]
 	}
