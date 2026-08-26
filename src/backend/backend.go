@@ -38,7 +38,7 @@ type Settings struct {
 	DefaultOp Op
 	ForceOp   Op
 
-	SkipPortable bool
+	NoPortable bool
 }
 
 func NewSettings() Settings {
