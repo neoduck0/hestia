@@ -174,3 +174,23 @@ func DecollapsePath(p string) (string, error) {
 
 	return p, nil
 }
+
+func ExpandPath(p, root string) (string, error) {
+	p, err := DecollapsePath(p)
+	if err != nil {
+		return "", err
+	}
+
+	if filepath.IsAbs(p) {
+		return filepath.Clean(p), nil
+	}
+
+	if root == "" {
+		root, err = os.Getwd()
+		if err != nil {
+			return "", err
+		}
+	}
+
+	return filepath.Clean(filepath.Join(root, p)), nil
+}

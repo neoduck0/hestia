@@ -222,20 +222,6 @@ func parseMappingLine(p *Project, s Settings, group *group, line string) error {
 	return group.addMapping(p, mapping)
 }
 
-func expandMappingPath(p *Project, s string) (string, error) {
-	s, err := fsutils.DecollapsePath(s)
-	if err != nil {
-		return "", err
-	}
-
-	if filepath.IsAbs(s) {
-		return filepath.Clean(s), nil
-	}
-
-	root := filepath.Dir(p.root)
-	return filepath.Clean(filepath.Join(root, s)), nil
-}
-
 type group struct {
 	name     string
 	mappings []*mapping
@@ -274,11 +260,11 @@ type mapping struct {
 }
 
 func (m *mapping) absSrc(p *Project) (string, error) {
-	return expandMappingPath(p, m.src)
+	return fsutils.ExpandPath(m.src, filepath.Dir(p.root))
 }
 
 func (m *mapping) absDst(p *Project) (string, error) {
-	return expandMappingPath(p, m.dst)
+	return fsutils.ExpandPath(m.dst, filepath.Dir(p.root))
 }
 
 func (m *mapping) link(p *Project, s Settings) error {
@@ -365,7 +351,7 @@ func newMapping(p *Project, s Settings, src, dst string) (*mapping, error) {
 }
 
 func verifySrc(p *Project, src string) error {
-	absSrc, err := expandMappingPath(p, src)
+	absSrc, err := fsutils.ExpandPath(src, filepath.Dir(p.root))
 	if err != nil {
 		return err
 	}
@@ -382,7 +368,7 @@ func verifySrc(p *Project, src string) error {
 }
 
 func verifyDst(p *Project, dst string) error {
-	absDst, err := expandMappingPath(p, dst)
+	absDst, err := fsutils.ExpandPath(dst, filepath.Dir(p.root))
 	if err != nil {
 		return err
 	}
