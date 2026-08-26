@@ -1,9 +1,7 @@
 package backend
 
 import (
-	"os"
-	"path/filepath"
-	"strings"
+	"github.com/neoduck0/hestia/src/fsutils"
 )
 
 func (p *Project) Add(s Settings, groupName, src, dst string) error {
@@ -28,15 +26,8 @@ func (p *Project) Add(s Settings, groupName, src, dst string) error {
 	newSrc := src
 	newDst := dst
 	if !s.SkipPortable {
-		var err error
-		newSrc, err = portablePath(src)
-		if err != nil {
-			return err
-		}
-		newDst, err = portablePath(dst)
-		if err != nil {
-			return err
-		}
+		newSrc = fsutils.CollapsePath(src)
+		newDst = fsutils.CollapsePath(dst)
 	}
 
 	newMapping, err := newMapping(p, s, newSrc, newDst)
@@ -53,24 +44,4 @@ func (p *Project) Add(s Settings, groupName, src, dst string) error {
 	}
 
 	return nil
-}
-
-func portablePath(s string) (string, error) {
-	userHome, err := os.UserHomeDir()
-	if err != nil {
-		return "", err
-	}
-
-	if s == userHome {
-		return "~", nil
-	}
-
-	prefix := filepath.Clean(userHome) + "/"
-
-	newPath := s
-	if strings.HasPrefix(s, prefix) {
-		newPath = strings.Replace(s, prefix, "~/", 1)
-	}
-
-	return newPath, nil
 }

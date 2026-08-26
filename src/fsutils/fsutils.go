@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 func FindDirFiles(dir string) ([]string, error) {
@@ -133,4 +134,22 @@ func SetSymlinkTarget(src, target string) error {
 	}
 
 	return os.Rename(tempPath, src)
+}
+
+func CollapsePath(p string) string {
+	home, err := os.UserHomeDir()
+	if err != nil || home == "" {
+		return p
+	}
+
+	home = filepath.Clean(home)
+	if p == home {
+		return "~"
+	}
+
+	if strings.HasPrefix(p, home+string(filepath.Separator)) {
+		return "~" + strings.TrimPrefix(p, home)
+	}
+
+	return p
 }
