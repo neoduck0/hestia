@@ -168,7 +168,7 @@ func DecollapsePath(p string) (string, error) {
 		return home, nil
 	}
 
-	if strings.HasPrefix(p, "~/") || strings.HasPrefix(p, "~\\") {
+	if strings.HasPrefix(p, "~/") {
 		return filepath.Join(home, p[2:]), nil
 	}
 
