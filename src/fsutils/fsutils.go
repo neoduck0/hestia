@@ -153,3 +153,24 @@ func CollapsePath(p string) string {
 
 	return p
 }
+
+func DecollapsePath(p string) (string, error) {
+	if !strings.HasPrefix(p, "~") {
+		return p, nil
+	}
+
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+
+	if p == "~" {
+		return home, nil
+	}
+
+	if strings.HasPrefix(p, "~/") || strings.HasPrefix(p, "~\\") {
+		return filepath.Join(home, p[2:]), nil
+	}
+
+	return p, nil
+}

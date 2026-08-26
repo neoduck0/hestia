@@ -223,17 +223,9 @@ func parseMappingLine(p *Project, s Settings, group *group, line string) error {
 }
 
 func expandMappingPath(p *Project, s string) (string, error) {
-	if strings.HasPrefix(s, "~") {
-		home, err := os.UserHomeDir()
-		if err != nil {
-			return "", err
-		}
-
-		if s == "~" {
-			s = home
-		} else if strings.HasPrefix(s, "~/") || strings.HasPrefix(s, "~\\") {
-			s = filepath.Join(home, s[2:])
-		}
+	s, err := fsutils.DecollapsePath(s)
+	if err != nil {
+		return "", err
 	}
 
 	if filepath.IsAbs(s) {
