@@ -20,7 +20,7 @@ var addCmd = &cobra.Command{
 			log.Fatal(err)
 		}
 
-		skipPortable, err := cmd.Flags().GetBool("skip-portable")
+		noPortable, err := cmd.Flags().GetBool("no-portable")
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -32,7 +32,7 @@ var addCmd = &cobra.Command{
 		project := backend.NewProject()
 		settings := backend.NewSettings()
 
-		settings.SkipPortable = skipPortable
+		settings.NoPortable = noPortable
 
 		if err = project.Add(settings, group, args[0], args[1]); err != nil {
 			log.Fatal(err)
@@ -44,7 +44,7 @@ func init() {
 	addCmd.Flags().StringP("group", "g", "", "")
 	addCmd.MarkFlagRequired("group")
 
-	addCmd.Flags().Bool("skip-portable", false, "")
+	addCmd.Flags().Bool("no-portable", false, "")
 
 	rootCmd.AddCommand(addCmd)
 }

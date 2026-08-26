@@ -25,7 +25,7 @@ func (p *Project) Add(s Settings, groupName, src, dst string) error {
 
 	newSrc := src
 	newDst := dst
-	if !s.SkipPortable {
+	if !s.NoPortable {
 		newSrc = fsutils.CollapsePath(src)
 		newDst = fsutils.CollapsePath(dst)
 	}
