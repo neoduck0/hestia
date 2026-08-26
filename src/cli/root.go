@@ -14,8 +14,8 @@ var rootCmd = &cobra.Command{
 	Short: "",
 	Long:  "",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		debug, _ := cmd.Flags().GetBool("debug")
-		if debug {
+		verbose, _ := cmd.Flags().GetBool("verbose")
+		if verbose {
 			log.SetLevel(log.DebugLevel)
 		}
 	},
@@ -29,5 +29,5 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.PersistentFlags().BoolP("debug", "d", false, "")
+	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "")
 }
