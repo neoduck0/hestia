@@ -50,7 +50,12 @@ func CopyFile(src, dst string) error {
 	}
 
 	if srcInfo.Mode()&os.ModeSymlink != 0 {
-		return copySymlink(src, dst)
+		target, err := os.Readlink(src)
+		if err != nil {
+			return err
+		}
+
+		return SymlinkFile(target, dst)
 	}
 
 	srcFile, err := os.Open(src)
@@ -86,15 +91,6 @@ func CopyFile(src, dst string) error {
 	}
 
 	return os.Rename(tempPath, dst)
-}
-
-func copySymlink(src, dst string) error {
-	target, err := os.Readlink(src)
-	if err != nil {
-		return err
-	}
-
-	return SymlinkFile(target, dst)
 }
 
 func SymlinkFile(target, dst string) error {
