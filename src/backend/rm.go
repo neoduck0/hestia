@@ -8,7 +8,7 @@ import (
 )
 
 func (p *Project) Rm(s Settings, groupName string) error {
-	if err := p.readMappings(s); err != nil {
+	if err := p.readMappingsFile(s); err != nil {
 		return err
 	}
 
@@ -19,7 +19,7 @@ func (p *Project) Rm(s Settings, groupName string) error {
 
 	p.groups = slices.Delete(p.groups, groupIndex, groupIndex+1)
 
-	if err := p.writeMappings(); err != nil {
+	if err := p.writeMappingsFile(); err != nil {
 		return err
 	}
 
