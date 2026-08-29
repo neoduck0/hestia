@@ -6,7 +6,6 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/charmbracelet/log"
 	"github.com/neoduck0/hestia/src/fsutils"
@@ -15,8 +14,7 @@ import (
 const (
 	projectName = "Hestia"
 
-	hestiaDirName    = ".hestia"
-	mappingsFileName = "mappings.conf"
+	hestiaDirName = ".hestia"
 
 	defaultDirPerm  os.FileMode = 0o777
 	defaultFilePerm os.FileMode = 0o666
@@ -105,130 +103,6 @@ func (p *Project) findHestiaDir() error {
 	}
 
 	return errors.New("hestia directory not found")
-}
-
-func (p *Project) writeMappings() error {
-	if err := p.findHestiaDir(); err != nil {
-		return err
-	}
-
-	mappingsPath := filepath.Join(p.root, mappingsFileName)
-	mappingsInfo, err := os.Stat(mappingsPath)
-	if err != nil {
-		return err
-	}
-
-	tempFile, err := os.CreateTemp(p.root, mappingsFileName+".*.tmp")
-	if err != nil {
-		return err
-	}
-	tempPath := tempFile.Name()
-	if err := tempFile.Chmod(mappingsInfo.Mode().Perm()); err != nil {
-		tempFile.Close()
-		os.Remove(tempPath)
-		return err
-	}
-
-	for _, g := range p.groups {
-		if _, err := tempFile.WriteString("[" + g.name + "]\n"); err != nil {
-			tempFile.Close()
-			os.Remove(tempPath)
-			return err
-		}
-
-		for _, m := range g.mappings {
-			line := fmt.Sprintf("%q -> %q\n", m.src, m.dst)
-			if _, err := tempFile.WriteString(line); err != nil {
-				tempFile.Close()
-				os.Remove(tempPath)
-				return err
-			}
-		}
-	}
-
-	if err := tempFile.Close(); err != nil {
-		os.Remove(tempPath)
-		return err
-	}
-
-	if err := os.Rename(tempPath, mappingsPath); err != nil {
-		os.Remove(tempPath)
-		return err
-	}
-
-	return nil
-}
-
-func (p *Project) readMappings(s Settings) error {
-	if err := p.findHestiaDir(); err != nil {
-		return err
-	}
-
-	filePath := filepath.Join(p.root, mappingsFileName)
-	fileBytes, err := os.ReadFile(filePath)
-	if err != nil {
-		return err
-	}
-
-	fileSlice := strings.Split(string(fileBytes), "\n")
-
-	p.groups = []group{}
-
-	var currentGroup *group = nil
-	for _, line := range fileSlice {
-		lineType := ""
-
-		if strings.Contains(line, "[") {
-			lineType = "group"
-		} else if strings.Contains(line, "->") {
-			lineType = "mapping"
-		} else if !(strings.TrimSpace(line) == "") {
-			return fmt.Errorf("bad line in %s: %s", mappingsFileName, line)
-		}
-
-		if lineType == "group" {
-			groupName := strings.Trim(line, "[ ]")
-			if groupName == "" {
-				return fmt.Errorf("malformed group line: %s", line)
-			}
-			p.groups = append(p.groups, newGroup(groupName))
-			currentGroup = &p.groups[len(p.groups)-1]
-		}
-
-		if lineType == "mapping" {
-			if currentGroup == nil {
-				return fmt.Errorf("mapping is without a group: %s", line)
-			}
-
-			err := parseMappingLine(p, s, currentGroup, line)
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	return nil
-}
-
-func parseMappingLine(p *Project, s Settings, group *group, line string) error {
-	src, dst, _ := strings.Cut(line, "->")
-
-	src = strings.TrimSpace(src)
-	dst = strings.TrimSpace(dst)
-
-	src = strings.Trim(src, "\"")
-	dst = strings.Trim(dst, "\"")
-
-	if src == "" || dst == "" {
-		return fmt.Errorf("malformed mapping line: %s", line)
-	}
-
-	mapping, err := newMapping(p, s, src, dst)
-	if err != nil {
-		return err
-	}
-
-	return group.addMapping(p, mapping)
 }
 
 type group struct {

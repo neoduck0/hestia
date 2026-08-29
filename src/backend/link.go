@@ -9,7 +9,7 @@ import (
 )
 
 func (p *Project) Link(s Settings, selectedGroups map[string]struct{}, all, exclude bool) error {
-	if err := p.readMappings(s); err != nil {
+	if err := p.readMappingsFile(s); err != nil {
 		return err
 	}
 

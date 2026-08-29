@@ -5,7 +5,7 @@ import (
 )
 
 func (p *Project) Add(s Settings, groupName, src, dst string) error {
-	if err := p.readMappings(s); err != nil {
+	if err := p.readMappingsFile(s); err != nil {
 		return err
 	}
 
@@ -33,7 +33,7 @@ func (p *Project) Add(s Settings, groupName, src, dst string) error {
 		return err
 	}
 
-	if err := p.writeMappings(); err != nil {
+	if err := p.writeMappingsFile(); err != nil {
 		return err
 	}
 
