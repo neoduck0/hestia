@@ -7,7 +7,7 @@ import (
 	"github.com/charmbracelet/log"
 )
 
-func (p *Project) Rm(s Settings, groupName string) error {
+func (p *Project) Delete(s Settings, groupName string) error {
 	if err := p.readMappingsFile(s); err != nil {
 		return err
 	}
@@ -23,7 +23,7 @@ func (p *Project) Rm(s Settings, groupName string) error {
 		return err
 	}
 
-	log.Infof("group removed: %v", groupName)
+	log.Infof("group deleted: %v", groupName)
 
 	return nil
 }

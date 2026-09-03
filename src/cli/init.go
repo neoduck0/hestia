@@ -7,10 +7,11 @@ import (
 )
 
 var initCmd = &cobra.Command{
-	Use:   "init",
-	Short: "",
-	Long:  "",
-	Args:  cobra.NoArgs,
+	Use:     "init",
+	Aliases: []string{"i"},
+	Short:   "",
+	Long:    "",
+	Args:    cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		err := backend.Init()
 		if err != nil {

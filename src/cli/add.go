@@ -10,10 +10,11 @@ import (
 )
 
 var addCmd = &cobra.Command{
-	Use:   "add",
-	Short: "",
-	Long:  "",
-	Args:  cobra.ExactArgs(2),
+	Use:     "add",
+	Aliases: []string{"a"},
+	Short:   "",
+	Long:    "",
+	Args:    cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
 		group, err := cmd.Flags().GetString("group")
 		if err != nil {
