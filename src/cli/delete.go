@@ -9,11 +9,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var rmCmd = &cobra.Command{
-	Use:   "rm",
-	Short: "",
-	Long:  "",
-	Args:  cobra.NoArgs,
+var deleteCmd = &cobra.Command{
+	Use:     "delete",
+	Aliases: []string{"d"},
+	Short:   "",
+	Long:    "",
+	Args:    cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		group, err := cmd.Flags().GetString("group")
 		if err != nil {
@@ -27,15 +28,15 @@ var rmCmd = &cobra.Command{
 		project := backend.NewProject()
 		settings := backend.NewSettings()
 
-		if err = project.Rm(settings, group); err != nil {
+		if err = project.Delete(settings, group); err != nil {
 			log.Fatal(err)
 		}
 	},
 }
 
 func init() {
-	rmCmd.Flags().StringP("group", "g", "", "")
-	rmCmd.MarkFlagRequired("group")
+	deleteCmd.Flags().StringP("group", "g", "", "")
+	deleteCmd.MarkFlagRequired("group")
 
-	rootCmd.AddCommand(rmCmd)
+	rootCmd.AddCommand(deleteCmd)
 }

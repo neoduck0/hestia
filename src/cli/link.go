@@ -9,9 +9,10 @@ import (
 )
 
 var linkCmd = &cobra.Command{
-	Use:   "link [group...]",
-	Short: "",
-	Long:  "",
+	Use:     "link [group...]",
+	Aliases: []string{"l"},
+	Short:   "",
+	Long:    "",
 	Args: func(cmd *cobra.Command, args []string) error {
 		all, err := cmd.Flags().GetBool("all")
 		if err != nil {
