@@ -1,6 +1,7 @@
 package backend
 
 import (
+	"github.com/charmbracelet/log"
 	"github.com/neoduck0/hestia/src/fsutils"
 )
 
@@ -13,6 +14,7 @@ func (p *Project) Add(s Settings, groupName, src, dst string) error {
 	if groupIndex := p.findGroupIndex(groupName); groupIndex != -1 {
 		chosenGroup = &p.groups[groupIndex]
 	} else {
+		log.Debugf("creating group: %v", groupName)
 		p.groups = append(p.groups, newGroup(groupName))
 		chosenGroup = &p.groups[len(p.groups)-1]
 	}
@@ -29,6 +31,7 @@ func (p *Project) Add(s Settings, groupName, src, dst string) error {
 		return err
 	}
 
+	log.Debugf("adding mapping to %v: %v -> %v", groupName, newSrc, newDst)
 	if err := chosenGroup.addMapping(p, newMapping); err != nil {
 		return err
 	}

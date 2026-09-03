@@ -89,6 +89,7 @@ func (p *Project) findHestiaDir() error {
 		if err == nil {
 			if info.IsDir() {
 				p.root = candidate
+				log.Debugf("found hestia directory: %v", p.root)
 				return nil
 			}
 		} else if !errors.Is(err, fs.ErrNotExist) {
@@ -173,6 +174,7 @@ func (m *mapping) link(p *Project, s Settings) error {
 		if err != nil {
 			return err
 		}
+		log.Debugf("discovered %d files in directory: %v", len(files), absSrc)
 	} else {
 		files = append(files, "")
 	}
@@ -201,8 +203,10 @@ func (m *mapping) link(p *Project, s Settings) error {
 
 		switch m.op {
 		case OpSymlink:
+			log.Debugf("symlinking: %v -> %v", resolvedSrc, resolvedDst)
 			err = fsutils.SymlinkFile(resolvedSrc, resolvedDst)
 		case OpCopy:
+			log.Debugf("copying: %v -> %v", resolvedSrc, resolvedDst)
 			err = fsutils.CopyFile(resolvedSrc, resolvedDst)
 		default:
 			return fmt.Errorf("unknown operation: %s", m.op)

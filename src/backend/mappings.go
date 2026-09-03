@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/charmbracelet/log"
 )
 
 const (
@@ -18,6 +20,7 @@ func (p *Project) writeMappingsFile() error {
 	}
 
 	mappingsPath := filepath.Join(p.root, mappingsFileName)
+	log.Debugf("writing mappings to: %v", mappingsPath)
 	mappingsInfo, err := os.Stat(mappingsPath)
 	if err != nil {
 		return err
@@ -70,6 +73,7 @@ func (p *Project) readMappingsFile(s Settings) error {
 	}
 
 	filePath := filepath.Join(p.root, mappingsFileName)
+	log.Debugf("reading mappings from: %v", filePath)
 	fileBytes, err := os.ReadFile(filePath)
 	if err != nil {
 		return err
