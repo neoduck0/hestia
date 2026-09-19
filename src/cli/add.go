@@ -26,6 +26,11 @@ var addCmd = &cobra.Command{
 			log.Fatal(err)
 		}
 
+		create, err := cmd.Flags().GetBool("create")
+		if err != nil {
+			log.Fatal(err)
+		}
+
 		if strings.TrimSpace(group) == "" {
 			log.Fatal(errors.New("group is required"))
 		}
@@ -35,7 +40,7 @@ var addCmd = &cobra.Command{
 
 		settings.NoPortable = noPortable
 
-		if err = project.Add(settings, group, args[0], args[1]); err != nil {
+		if err = project.Add(settings, group, args[0], args[1], create); err != nil {
 			log.Fatal(err)
 		}
 	},
@@ -44,6 +49,8 @@ var addCmd = &cobra.Command{
 func init() {
 	addCmd.Flags().StringP("group", "g", "", "")
 	addCmd.MarkFlagRequired("group")
+
+	addCmd.Flags().Bool("create", false, "")
 
 	addCmd.Flags().Bool("no-portable", false, "")
 
