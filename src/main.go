@@ -1,3 +1,6 @@
+// Command hst is the Hestia command-line tool. It deploys files from a
+// project's source tree to destinations on the system by symlinking or
+// copying them, as described by the project's mappings file.
 package main
 
 import (
@@ -13,6 +16,8 @@ func main() {
 	cli.Execute()
 }
 
+// prepareLogger installs a stderr logger with custom level colors as the
+// default logger.
 func prepareLogger() {
 	logger := log.New(os.Stderr)
 

@@ -7,6 +7,8 @@ import (
 	"github.com/charmbracelet/log"
 )
 
+// Delete removes the group named groupName and all of its mappings from the
+// mappings file.
 func (p *Project) Delete(s Settings, groupName string) error {
 	if err := p.readMappingsFile(s); err != nil {
 		return err

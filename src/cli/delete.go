@@ -9,6 +9,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// deleteCmd implements "hst delete --group <group>", which removes a group
+// and its mappings.
 var deleteCmd = &cobra.Command{
 	Use:     "delete",
 	Aliases: []string{"d"},

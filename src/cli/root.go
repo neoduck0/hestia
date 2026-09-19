@@ -1,3 +1,5 @@
+// Package cli defines the hst command-line interface on top of package
+// backend.
 package cli
 
 import (
@@ -7,8 +9,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// appName is the name of the executable and the root command.
 const appName = "hst"
 
+// rootCmd is the top-level hst command. Its --verbose flag enables debug
+// logging for all subcommands.
 var rootCmd = &cobra.Command{
 	Use:   appName,
 	Short: "",
@@ -21,6 +26,7 @@ var rootCmd = &cobra.Command{
 	},
 }
 
+// Execute runs the root command and exits with status 1 on failure.
 func Execute() {
 	err := rootCmd.Execute()
 	if err != nil {

@@ -7,6 +7,10 @@ import (
 	"github.com/neoduck0/hestia/src/fsutils"
 )
 
+// Add maps src to dst in the group named groupName and saves the mappings
+// file. If the group does not exist, it is created when create is true and an
+// error is returned otherwise. Unless s.NoPortable is set, paths under the
+// home directory are stored with a leading "~".
 func (p *Project) Add(s Settings, groupName, src, dst string, create bool) error {
 	if err := p.readMappingsFile(s); err != nil {
 		return err

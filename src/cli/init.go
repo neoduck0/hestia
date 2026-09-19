@@ -6,6 +6,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// initCmd implements "hst init", which creates a Hestia project in the
+// working directory.
 var initCmd = &cobra.Command{
 	Use:     "init",
 	Aliases: []string{"i"},
