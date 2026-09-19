@@ -203,6 +203,16 @@ func (m *mapping) link(p *Project, s Settings) error {
 
 		switch m.op {
 		case OpSymlink:
+			var linked bool
+			linked, err = fsutils.IsSymlinkTo(resolvedDst, resolvedSrc)
+			if err != nil {
+				return err
+			}
+			if linked {
+				log.Debugf("already symlinked, skipping: %v", resolvedDst)
+				continue
+			}
+
 			log.Debugf("symlinking: %v -> %v", resolvedSrc, resolvedDst)
 			err = fsutils.SymlinkFile(resolvedSrc, resolvedDst)
 		case OpCopy:
