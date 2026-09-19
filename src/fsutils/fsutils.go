@@ -3,6 +3,7 @@
 package fsutils
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -165,6 +166,79 @@ func IsSymlinkTo(path, target string) (bool, error) {
 	}
 
 	return current == target, nil
+}
+
+// IsCopyOf reports whether path already matches what CopyFile would produce
+// from src: a symlink with the same target if src is a symlink, otherwise a
+// regular file with the same permissions and contents. A missing path is not
+// an error.
+func IsCopyOf(path, src string) (bool, error) {
+	srcInfo, err := os.Lstat(src)
+	if err != nil {
+		return false, err
+	}
+
+	if srcInfo.Mode()&os.ModeSymlink != 0 {
+		target, err := os.Readlink(src)
+		if err != nil {
+			return false, err
+		}
+
+		return IsSymlinkTo(path, target)
+	}
+
+	info, err := os.Lstat(path)
+	if errors.Is(err, fs.ErrNotExist) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+
+	if !info.Mode().IsRegular() ||
+		info.Mode().Perm() != srcInfo.Mode().Perm() ||
+		info.Size() != srcInfo.Size() {
+		return false, nil
+	}
+
+	return sameContents(path, src)
+}
+
+// sameContents reports whether the files at a and b have identical contents.
+func sameContents(a, b string) (bool, error) {
+	fileA, err := os.Open(a)
+	if err != nil {
+		return false, err
+	}
+	defer fileA.Close()
+
+	fileB, err := os.Open(b)
+	if err != nil {
+		return false, err
+	}
+	defer fileB.Close()
+
+	bufA := make([]byte, 32*1024)
+	bufB := make([]byte, 32*1024)
+	for {
+		nA, errA := io.ReadFull(fileA, bufA)
+		nB, errB := io.ReadFull(fileB, bufB)
+		if !bytes.Equal(bufA[:nA], bufB[:nB]) {
+			return false, nil
+		}
+
+		endA := errors.Is(errA, io.EOF) || errors.Is(errA, io.ErrUnexpectedEOF)
+		endB := errors.Is(errB, io.EOF) || errors.Is(errB, io.ErrUnexpectedEOF)
+		if errA != nil && !endA {
+			return false, errA
+		}
+		if errB != nil && !endB {
+			return false, errB
+		}
+		if endA || endB {
+			return endA && endB, nil
+		}
+	}
 }
 
 // CollapsePath replaces a leading home directory in p with "~". It returns p

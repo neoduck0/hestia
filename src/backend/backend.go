@@ -191,7 +191,8 @@ func (m *mapping) absDst(p *Project) (string, error) {
 
 // link places m's source at its destination using m.op, creating parent
 // directories as needed. A directory source is linked file by file. Existing
-// symlinks that already point to the source are left untouched.
+// symlinks that already point to the source, and existing copies that already
+// match it, are left untouched.
 func (m *mapping) link(p *Project, s Settings) error {
 	absSrc, err := m.absSrc(p)
 	if err != nil {
@@ -257,6 +258,16 @@ func (m *mapping) link(p *Project, s Settings) error {
 			log.Debugf("symlinking: %v -> %v", resolvedSrc, resolvedDst)
 			err = fsutils.SymlinkFile(resolvedSrc, resolvedDst)
 		case OpCopy:
+			var copied bool
+			copied, err = fsutils.IsCopyOf(resolvedDst, resolvedSrc)
+			if err != nil {
+				return err
+			}
+			if copied {
+				log.Debugf("already copied, skipping: %v", resolvedDst)
+				continue
+			}
+
 			log.Debugf("copying: %v -> %v", resolvedSrc, resolvedDst)
 			err = fsutils.CopyFile(resolvedSrc, resolvedDst)
 		default:
