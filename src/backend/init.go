@@ -9,6 +9,8 @@ import (
 	"github.com/charmbracelet/log"
 )
 
+// Init creates a .hestia directory and an empty mappings file in the working
+// directory. Existing ones are left as they are.
 func Init() error {
 	err := os.Mkdir(hestiaDirName, defaultDirPerm)
 	if err != nil && !errors.Is(err, fs.ErrExist) {

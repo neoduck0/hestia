@@ -8,6 +8,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// linkCmd implements "hst link", which links the given groups, all groups
+// with --all, or all but the given groups with --exclude.
 var linkCmd = &cobra.Command{
 	Use:     "link [group...]",
 	Aliases: []string{"l"},

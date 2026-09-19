@@ -9,6 +9,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// addCmd implements "hst add <src> <dst> --group <group>", which adds a
+// mapping to a group.
 var addCmd = &cobra.Command{
 	Use:     "add",
 	Aliases: []string{"a"},

@@ -10,10 +10,15 @@ import (
 	"github.com/charmbracelet/log"
 )
 
+// mappingsFileName is the name of the mappings file inside the .hestia
+// directory.
 const (
 	mappingsFileName = "mappings.conf"
 )
 
+// writeMappingsFile serializes p.groups to the mappings file. It writes to a
+// temporary file first and renames it into place, preserving the existing
+// file's permissions.
 func (p *Project) writeMappingsFile() error {
 	if err := p.findHestiaDir(); err != nil {
 		return err
@@ -67,6 +72,10 @@ func (p *Project) writeMappingsFile() error {
 	return nil
 }
 
+// readMappingsFile replaces p.groups with the contents of the mappings file.
+// The file consists of "[group]" headers, each followed by "src -> dst"
+// mapping lines; blank lines are ignored. Errors are prefixed with the file
+// name and line number.
 func (p *Project) readMappingsFile(s Settings) error {
 	if err := p.findHestiaDir(); err != nil {
 		return err
@@ -124,6 +133,7 @@ func (p *Project) readMappingsFile(s Settings) error {
 	return nil
 }
 
+// parseGroupLine returns the group name from a "[name]" header line.
 func parseGroupLine(line string) (string, error) {
 	if !strings.HasPrefix(line, "[") || !strings.HasSuffix(line, "]") {
 		return "", fmt.Errorf("malformed group line: %s", line)
@@ -137,6 +147,9 @@ func parseGroupLine(line string) (string, error) {
 	return name, nil
 }
 
+// parseMappingLine parses a "src -> dst" line and returns the source and
+// destination. Each value is either a Go-quoted string or a bare word
+// without whitespace or "->".
 func parseMappingLine(line string) (string, string, error) {
 	var fields [2]string
 

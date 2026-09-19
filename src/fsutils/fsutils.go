@@ -1,3 +1,5 @@
+// Package fsutils provides filesystem helpers for atomically placing files
+// and symlinks and for resolving home-relative paths.
 package fsutils
 
 import (
@@ -10,6 +12,8 @@ import (
 	"strings"
 )
 
+// FindDirFiles returns the paths, relative to dir, of every non-directory
+// entry under dir.
 func FindDirFiles(dir string) ([]string, error) {
 	fileInfo, err := os.Stat(dir)
 	if err != nil {
@@ -45,6 +49,9 @@ func FindDirFiles(dir string) ([]string, error) {
 	return files, nil
 }
 
+// CopyFile copies src to dst, preserving its permissions. If src is a
+// symlink, the link itself is copied rather than its target. dst is replaced
+// atomically via a temporary file in the same directory.
 func CopyFile(src, dst string) error {
 	srcInfo, err := os.Lstat(src)
 	if err != nil {
@@ -95,6 +102,7 @@ func CopyFile(src, dst string) error {
 	return os.Rename(tempPath, dst)
 }
 
+// SymlinkFile atomically creates or replaces dst with a symlink to target.
 func SymlinkFile(target, dst string) error {
 	tempDir, err := os.MkdirTemp(filepath.Dir(dst), ".hestia-*.tmp")
 	if err != nil {
@@ -110,6 +118,8 @@ func SymlinkFile(target, dst string) error {
 	return os.Rename(tempPath, dst)
 }
 
+// SetSymlinkTarget atomically repoints the existing symlink src to target.
+// It returns an error if src is not a symlink.
 func SetSymlinkTarget(src, target string) error {
 	srcInfo, err := os.Lstat(src)
 	if err != nil {
@@ -134,6 +144,8 @@ func SetSymlinkTarget(src, target string) error {
 	return os.Rename(tempPath, src)
 }
 
+// IsSymlinkTo reports whether path is a symlink whose target is exactly
+// target. A missing path is not an error.
 func IsSymlinkTo(path, target string) (bool, error) {
 	info, err := os.Lstat(path)
 	if errors.Is(err, fs.ErrNotExist) {
@@ -155,6 +167,9 @@ func IsSymlinkTo(path, target string) (bool, error) {
 	return current == target, nil
 }
 
+// CollapsePath replaces a leading home directory in p with "~". It returns p
+// unchanged if p is not under the home directory or the home directory is
+// unknown.
 func CollapsePath(p string) string {
 	home, err := os.UserHomeDir()
 	if err != nil || home == "" {
@@ -173,6 +188,8 @@ func CollapsePath(p string) string {
 	return p
 }
 
+// DecollapsePath expands a leading "~" or "~/" in p to the home directory.
+// Other paths, including "~user" forms, are returned unchanged.
 func DecollapsePath(p string) (string, error) {
 	if !strings.HasPrefix(p, "~") {
 		return p, nil
@@ -194,6 +211,9 @@ func DecollapsePath(p string) (string, error) {
 	return p, nil
 }
 
+// ExpandPath returns p as a clean absolute path. A leading "~" is expanded
+// and relative paths are joined to root, or to the working directory if root
+// is empty.
 func ExpandPath(p, root string) (string, error) {
 	p, err := DecollapsePath(p)
 	if err != nil {
