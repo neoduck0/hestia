@@ -1,11 +1,13 @@
 package backend
 
 import (
+	"fmt"
+
 	"github.com/charmbracelet/log"
 	"github.com/neoduck0/hestia/src/fsutils"
 )
 
-func (p *Project) Add(s Settings, groupName, src, dst string) error {
+func (p *Project) Add(s Settings, groupName, src, dst string, create bool) error {
 	if err := p.readMappingsFile(s); err != nil {
 		return err
 	}
@@ -13,10 +15,13 @@ func (p *Project) Add(s Settings, groupName, src, dst string) error {
 	var chosenGroup *group
 	if groupIndex := p.findGroupIndex(groupName); groupIndex != -1 {
 		chosenGroup = &p.groups[groupIndex]
+	} else if create {
+		var err error
+		if chosenGroup, err = p.createGroup(groupName); err != nil {
+			return err
+		}
 	} else {
-		log.Debugf("creating group: %v", groupName)
-		p.groups = append(p.groups, newGroup(groupName))
-		chosenGroup = &p.groups[len(p.groups)-1]
+		return fmt.Errorf("group does not exist: %s", groupName)
 	}
 
 	newSrc := src
