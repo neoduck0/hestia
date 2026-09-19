@@ -12,11 +12,21 @@ import (
 // addCmd implements "hst add <src> <dst> --group <group>", which adds a
 // mapping to a group.
 var addCmd = &cobra.Command{
-	Use:     "add",
+	Use:     "add <src> <dst>",
 	Aliases: []string{"a"},
-	Short:   "",
-	Long:    "",
-	Args:    cobra.ExactArgs(2),
+	Short:   "Add a mapping from src to dst to a group",
+	Long: `Add a mapping from src to dst to the group given by --group.
+
+The source must exist, and the destination must not already be mapped in any
+group. The group must exist unless --create is given, in which case it is
+created.
+
+Relative paths are resolved against the directory containing .hestia, not the
+working directory.
+
+Unless --no-portable is given, absolute paths under the home directory are
+stored with a leading "~" so the mappings file works for other users.`,
+	Args: cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
 		group, err := cmd.Flags().GetString("group")
 		if err != nil {
@@ -49,12 +59,12 @@ var addCmd = &cobra.Command{
 }
 
 func init() {
-	addCmd.Flags().StringP("group", "g", "", "")
+	addCmd.Flags().StringP("group", "g", "", "group to add the mapping to")
 	addCmd.MarkFlagRequired("group")
 
-	addCmd.Flags().Bool("create", false, "")
+	addCmd.Flags().Bool("create", false, "create the group if it does not exist")
 
-	addCmd.Flags().Bool("no-portable", false, "")
+	addCmd.Flags().Bool("no-portable", false, "store paths as given instead of collapsing the home directory to \"~\"")
 
 	rootCmd.AddCommand(addCmd)
 }

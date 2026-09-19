@@ -13,8 +13,17 @@ import (
 var linkCmd = &cobra.Command{
 	Use:     "link [group...]",
 	Aliases: []string{"l"},
-	Short:   "",
-	Long:    "",
+	Short:   "Link the mappings of one or more groups",
+	Long: `Link the mappings of the given groups.
+
+With --all, every group is linked and no groups may be given. With --exclude,
+every group except the given ones is linked.
+
+Each source is placed at its destination as a symlink by default, or as a copy
+with --copy. Parent directories are created as needed. When symlinking,
+destinations that already link to their source are left untouched.
+
+With --dry-run, the mappings file is checked but nothing is linked.`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		all, err := cmd.Flags().GetBool("all")
 		if err != nil {
@@ -88,14 +97,14 @@ var linkCmd = &cobra.Command{
 }
 
 func init() {
-	linkCmd.Flags().Bool("dry-run", false, "")
+	linkCmd.Flags().Bool("dry-run", false, "check the mappings file without linking anything")
 
-	linkCmd.Flags().BoolP("copy", "c", false, "")
-	linkCmd.Flags().BoolP("symlink", "s", false, "")
+	linkCmd.Flags().BoolP("copy", "c", false, "copy every mapping instead of symlinking")
+	linkCmd.Flags().BoolP("symlink", "s", false, "symlink every mapping (the default)")
 	linkCmd.MarkFlagsMutuallyExclusive("copy", "symlink")
 
-	linkCmd.Flags().BoolP("exclude", "e", false, "")
-	linkCmd.Flags().BoolP("all", "a", false, "")
+	linkCmd.Flags().BoolP("exclude", "e", false, "link every group except the given ones")
+	linkCmd.Flags().BoolP("all", "a", false, "link every group")
 	linkCmd.MarkFlagsMutuallyExclusive("all", "exclude")
 
 	rootCmd.AddCommand(linkCmd)
