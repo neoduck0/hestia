@@ -11,9 +11,12 @@ import (
 var initCmd = &cobra.Command{
 	Use:     "init",
 	Aliases: []string{"i"},
-	Short:   "",
-	Long:    "",
-	Args:    cobra.NoArgs,
+	Short:   "Create a Hestia project in the working directory",
+	Long: `Create a Hestia project in the working directory.
+
+This creates a .hestia directory containing an empty mappings.conf file. An
+existing .hestia directory or mappings file is left as it is.`,
+	Args: cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		err := backend.Init()
 		if err != nil {

@@ -16,8 +16,17 @@ const appName = "hst"
 // logging for all subcommands.
 var rootCmd = &cobra.Command{
 	Use:   appName,
-	Short: "",
-	Long:  "",
+	Short: "Hestia links files from a project to where they belong",
+	Long: `Hestia links files from a project to where they belong.
+
+A project is a directory containing a .hestia directory, found by searching the
+working directory and its ancestors. Its .hestia/mappings.conf file holds named
+groups of mappings, each pairing a source path with a destination path.
+Relative paths are resolved against the directory containing .hestia, and "~"
+expands to the home directory.
+
+Linking a group places each source at its destination, either as a symlink
+(the default) or as a copy. Directory sources are linked file by file.`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		verbose, _ := cmd.Flags().GetBool("verbose")
 		if verbose {
@@ -35,5 +44,5 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "")
+	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "show debug output")
 }

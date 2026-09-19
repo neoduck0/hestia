@@ -14,9 +14,12 @@ import (
 var deleteCmd = &cobra.Command{
 	Use:     "delete",
 	Aliases: []string{"d"},
-	Short:   "",
-	Long:    "",
-	Args:    cobra.NoArgs,
+	Short:   "Delete a group and its mappings",
+	Long: `Delete the group given by --group and all of its mappings from the mappings
+file.
+
+Files that were already linked are not removed.`,
+	Args: cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		group, err := cmd.Flags().GetString("group")
 		if err != nil {
@@ -37,7 +40,7 @@ var deleteCmd = &cobra.Command{
 }
 
 func init() {
-	deleteCmd.Flags().StringP("group", "g", "", "")
+	deleteCmd.Flags().StringP("group", "g", "", "group to delete")
 	deleteCmd.MarkFlagRequired("group")
 
 	rootCmd.AddCommand(deleteCmd)
