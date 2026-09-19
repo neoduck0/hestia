@@ -1,8 +1,10 @@
 package fsutils
 
 import (
+	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -130,6 +132,27 @@ func SetSymlinkTarget(src, target string) error {
 	}
 
 	return os.Rename(tempPath, src)
+}
+
+func IsSymlinkTo(path, target string) (bool, error) {
+	info, err := os.Lstat(path)
+	if errors.Is(err, fs.ErrNotExist) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+
+	if info.Mode()&os.ModeSymlink == 0 {
+		return false, nil
+	}
+
+	current, err := os.Readlink(path)
+	if err != nil {
+		return false, err
+	}
+
+	return current == target, nil
 }
 
 func CollapsePath(p string) string {
