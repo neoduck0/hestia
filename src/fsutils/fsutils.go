@@ -14,7 +14,7 @@ import (
 )
 
 // FindDirFiles returns the paths, relative to dir, of every non-directory
-// entry under dir.
+// entry under dir. Traversal does not follow symlinked directories.
 func FindDirFiles(dir string) ([]string, error) {
 	fileInfo, err := os.Stat(dir)
 	if err != nil {
@@ -50,9 +50,10 @@ func FindDirFiles(dir string) ([]string, error) {
 	return files, nil
 }
 
-// CopyFile copies src to dst, preserving its permissions. If src is a
-// symlink, the link itself is copied rather than its target. dst is replaced
-// atomically via a temporary file in the same directory.
+// CopyFile copies src to dst, preserving its permission bits but not ownership
+// or special mode bits. If src is a symlink, the link itself is copied rather
+// than its target. dst is replaced atomically by renaming a temporary file on
+// the same filesystem. The parent directory of dst must already exist.
 func CopyFile(src, dst string) error {
 	srcInfo, err := os.Lstat(src)
 	if err != nil {
@@ -74,6 +75,8 @@ func CopyFile(src, dst string) error {
 	}
 	defer srcFile.Close()
 
+	// A private staging directory avoids name collisions and stays on dst's
+	// filesystem so the final rename is atomic.
 	tempDir, err := os.MkdirTemp(filepath.Dir(dst), ".hestia-*.tmp")
 	if err != nil {
 		return err
@@ -104,6 +107,7 @@ func CopyFile(src, dst string) error {
 }
 
 // SymlinkFile atomically creates or replaces dst with a symlink to target.
+// The parent directory of dst must already exist.
 func SymlinkFile(target, dst string) error {
 	tempDir, err := os.MkdirTemp(filepath.Dir(dst), ".hestia-*.tmp")
 	if err != nil {
@@ -170,8 +174,8 @@ func IsSymlinkTo(path, target string) (bool, error) {
 
 // IsCopyOf reports whether path already matches what CopyFile would produce
 // from src: a symlink with the same target if src is a symlink, otherwise a
-// regular file with the same permissions and contents. A missing path is not
-// an error.
+// regular file with the same permission bits and contents. A missing
+// destination returns false without an error; a missing source is an error.
 func IsCopyOf(path, src string) (bool, error) {
 	srcInfo, err := os.Lstat(src)
 	if err != nil {
@@ -204,7 +208,6 @@ func IsCopyOf(path, src string) (bool, error) {
 	return sameContents(path, src)
 }
 
-// sameContents reports whether the files at a and b have identical contents.
 func sameContents(a, b string) (bool, error) {
 	fileA, err := os.Open(a)
 	if err != nil {
@@ -263,7 +266,8 @@ func CollapsePath(p string) string {
 }
 
 // DecollapsePath expands a leading "~" or "~/" in p to the home directory.
-// Other paths, including "~user" forms, are returned unchanged.
+// Other paths, including "~user" forms, are not expanded. For any path starting
+// with "~", it returns an error if the home directory cannot be determined.
 func DecollapsePath(p string) (string, error) {
 	if !strings.HasPrefix(p, "~") {
 		return p, nil
@@ -285,9 +289,10 @@ func DecollapsePath(p string) (string, error) {
 	return p, nil
 }
 
-// ExpandPath returns p as a clean absolute path. A leading "~" is expanded
-// and relative paths are joined to root, or to the working directory if root
-// is empty.
+// ExpandPath returns p as a clean absolute path. Only a leading "~" or "~/"
+// is expanded; "~user" forms are not. Relative paths are joined to root, or
+// to the working directory if root is empty. The caller must supply an
+// absolute root when root is non-empty; this requirement is not checked.
 func ExpandPath(p, root string) (string, error) {
 	p, err := DecollapsePath(p)
 	if err != nil {

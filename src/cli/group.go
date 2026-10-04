@@ -6,7 +6,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// groupCmd is the parent of the group management subcommands.
 var groupCmd = &cobra.Command{
 	Use:     "group",
 	Aliases: []string{"g"},
@@ -17,7 +16,6 @@ A group is a named set of mappings that are linked together.`,
 	Args: cobra.NoArgs,
 }
 
-// groupAddCmd implements "hst group add", which creates an empty group.
 var groupAddCmd = &cobra.Command{
 	Use:     "add <group>",
 	Aliases: []string{"a"},
@@ -37,8 +35,6 @@ brackets or line breaks, and must not already be used by another group.`,
 	},
 }
 
-// groupDeleteCmd implements "hst group delete", which removes a group and its
-// mappings.
 var groupDeleteCmd = &cobra.Command{
 	Use:     "delete <group>",
 	Aliases: []string{"d"},
@@ -57,7 +53,6 @@ Files that were already linked are not removed.`,
 	},
 }
 
-// groupRenameCmd implements "hst group rename", which renames a group.
 var groupRenameCmd = &cobra.Command{
 	Use:     "rename <old> <new>",
 	Aliases: []string{"r"},

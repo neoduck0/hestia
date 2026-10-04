@@ -11,7 +11,8 @@ import (
 // Link links groups from the mappings file. If all is true every group is
 // linked; if exclude is true every group not in selectedGroups is linked;
 // otherwise only the groups in selectedGroups are linked. It returns an error
-// if selectedGroups names a group that does not exist.
+// if selectedGroups names a group that does not exist. Link stops at the first
+// error and does not undo files or symlinks already placed.
 func (p *Project) Link(s Settings, selectedGroups map[string]struct{}, all, exclude bool) error {
 	if err := p.readMappingsFile(s); err != nil {
 		return err
@@ -38,7 +39,6 @@ func (p *Project) Link(s Settings, selectedGroups map[string]struct{}, all, excl
 	return nil
 }
 
-// linkAll links every group in p.
 func (p *Project) linkAll(s Settings) error {
 	for _, group := range p.groups {
 		err := group.link(p, s)
@@ -49,7 +49,6 @@ func (p *Project) linkAll(s Settings) error {
 	return nil
 }
 
-// linkInclude links the groups in p whose names are in selectedGroups.
 func (p *Project) linkInclude(s Settings, selectedGroups map[string]struct{}) error {
 	for _, group := range p.groups {
 		if _, ok := selectedGroups[group.name]; !ok {
@@ -65,7 +64,6 @@ func (p *Project) linkInclude(s Settings, selectedGroups map[string]struct{}) er
 	return nil
 }
 
-// linkExclude links the groups in p whose names are not in selectedGroups.
 func (p *Project) linkExclude(s Settings, selectedGroups map[string]struct{}) error {
 	for _, group := range p.groups {
 		if _, ok := selectedGroups[group.name]; ok {

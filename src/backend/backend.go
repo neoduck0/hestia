@@ -15,10 +15,7 @@ import (
 )
 
 const (
-	// projectName is the user-facing name of the tool.
-	projectName = "Hestia"
-
-	// hestiaDirName is the name of the directory that marks a project root.
+	projectName   = "Hestia"
 	hestiaDirName = ".hestia"
 
 	// defaultDirPerm and defaultFilePerm are the modes, before umask, used
@@ -54,7 +51,9 @@ func NewProject() Project {
 
 // Settings controls how project operations behave.
 type Settings struct {
-	// DryRun reports what would be linked without touching the filesystem.
+	// DryRun checks sources and enumerates directory entries without modifying
+	// destinations when linking. It does not check whether destination writes
+	// would succeed.
 	DryRun bool
 
 	// DefaultOp is the operation used for mappings when ForceOp is unset.
@@ -134,7 +133,6 @@ func (p *Project) findHestiaDir() error {
 	return errors.New("hestia directory not found")
 }
 
-// group is a named set of mappings that are linked together.
 type group struct {
 	name     string
 	mappings []*mapping
@@ -169,7 +167,6 @@ func (g *group) addMapping(p *Project, m *mapping) error {
 	return nil
 }
 
-// newGroup returns an empty group with the given name.
 func newGroup(name string) group {
 	return group{name: name}
 }
@@ -183,12 +180,10 @@ type mapping struct {
 	op  Op
 }
 
-// absSrc returns the absolute path of m's source.
 func (m *mapping) absSrc(p *Project) (string, error) {
 	return fsutils.ExpandPath(m.src, filepath.Dir(p.root))
 }
 
-// absDst returns the absolute path of m's destination.
 func (m *mapping) absDst(p *Project) (string, error) {
 	return fsutils.ExpandPath(m.dst, filepath.Dir(p.root))
 }

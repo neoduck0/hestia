@@ -9,7 +9,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// appName is the name of the executable and the root command.
 const appName = "hst"
 
 // rootCmd is the top-level hst command. Its --verbose flag enables debug

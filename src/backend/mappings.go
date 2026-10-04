@@ -10,8 +10,6 @@ import (
 	"github.com/charmbracelet/log"
 )
 
-// mappingsFileName is the name of the mappings file inside the .hestia
-// directory.
 const (
 	mappingsFileName = "mappings.conf"
 )
@@ -74,8 +72,10 @@ func (p *Project) writeMappingsFile() error {
 
 // readMappingsFile replaces p.groups with the contents of the mappings file.
 // The file consists of "[group]" headers, each followed by "src -> dst"
-// mapping lines; blank lines are ignored. Errors are prefixed with the file
-// name and line number.
+// mapping lines; blank lines are ignored. Each source must exist, and mapping
+// operations are chosen using s.ForceOp or s.DefaultOp. Errors encountered
+// while processing lines are prefixed with the file name and line number.
+// If parsing fails, p.groups may contain only a partial result.
 func (p *Project) readMappingsFile(s Settings) error {
 	if err := p.findHestiaDir(); err != nil {
 		return err
@@ -109,6 +109,7 @@ func (p *Project) readMappingsFile(s Settings) error {
 			}
 
 			p.groups = append(p.groups, newGroup(groupName))
+			// Refresh the pointer after each append, which may move the backing array.
 			currentGroup = &p.groups[len(p.groups)-1]
 			continue
 		}
@@ -148,8 +149,8 @@ func parseGroupLine(line string) (string, error) {
 }
 
 // parseMappingLine parses a "src -> dst" line and returns the source and
-// destination. Each value is either a Go-quoted string or a bare word
-// without whitespace or "->".
+// destination. Each value is either a double-quoted string with Go escape
+// syntax or a bare word without whitespace or "->".
 func parseMappingLine(line string) (string, string, error) {
 	var fields [2]string
 

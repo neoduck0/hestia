@@ -8,7 +8,7 @@ import (
 )
 
 // AddGroup creates an empty group named groupName and saves the mappings
-// file.
+// file. It returns an error if a group with that name already exists.
 func (p *Project) AddGroup(s Settings, groupName string) error {
 	if err := p.readMappingsFile(s); err != nil {
 		return err
@@ -28,7 +28,8 @@ func (p *Project) AddGroup(s Settings, groupName string) error {
 }
 
 // RenameGroup renames the group oldName to newName and saves the mappings
-// file. It returns an error if oldName does not exist or newName is taken.
+// file. It returns an error if oldName does not exist or newName belongs to
+// another group. Renaming an existing group to its current name is a no-op.
 func (p *Project) RenameGroup(s Settings, oldName, newName string) error {
 	if err := validateGroupName(newName); err != nil {
 		return err
@@ -64,7 +65,8 @@ func (p *Project) RenameGroup(s Settings, oldName, newName string) error {
 }
 
 // createGroup validates name, appends a new empty group to p, and returns a
-// pointer to it. The pointer is invalidated if p.groups is reallocated.
+// pointer to it. Subsequent appends to p.groups may reallocate the slice,
+// leaving the returned pointer referring to the old backing array.
 func (p *Project) createGroup(name string) (*group, error) {
 	if err := validateGroupName(name); err != nil {
 		return nil, err
