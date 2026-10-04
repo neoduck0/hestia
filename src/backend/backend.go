@@ -153,11 +153,15 @@ func (g *group) link(p *Project, s Settings) error {
 	return nil
 }
 
-// addMapping appends m to g after checking that its destination is not
-// already mapped anywhere in p.
+// addMapping appends m to g, warning if its destination is already mapped in p.
 func (g *group) addMapping(p *Project, m *mapping) error {
-	if err := verifyDst(p, m.dst); err != nil {
+	exists, err := dstExists(p, m.dst)
+	if err != nil {
 		return err
+	}
+
+	if exists {
+		log.Warnf("another mapping has the same destination: %s", m.dst)
 	}
 
 	g.mappings = append(g.mappings, m)
@@ -319,26 +323,25 @@ func verifySrc(p *Project, src string) error {
 	return nil
 }
 
-// verifyDst returns an error if dst is already the destination of a mapping
-// in p.
-func verifyDst(p *Project, dst string) error {
+// dstExists reports whether dst is already mapped in p, comparing resolved paths.
+func dstExists(p *Project, dst string) (bool, error) {
 	absDst, err := fsutils.ExpandPath(dst, filepath.Dir(p.root))
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	for _, g := range p.groups {
 		for _, m := range g.mappings {
 			d, err := m.absDst(p)
 			if err != nil {
-				return err
+				return false, err
 			}
 
 			if d == absDst {
-				return fmt.Errorf("destination is already mapped: %s", dst)
+				return true, nil
 			}
 		}
 	}
 
-	return nil
+	return false, nil
 }

@@ -17,9 +17,8 @@ var addCmd = &cobra.Command{
 	Short:   "Add a mapping from src to dst to a group",
 	Long: `Add a mapping from src to dst to the group given by --group.
 
-The source must exist, and the destination must not already be mapped in any
-group. The group must exist unless --create is given, in which case it is
-created.
+The source must exist. Duplicate destinations are accepted with a warning.
+The group must exist unless --create is given.
 
 Relative paths are resolved against the directory containing .hestia, not the
 working directory.
