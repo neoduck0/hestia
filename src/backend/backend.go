@@ -136,6 +136,12 @@ func (p *Project) findHestiaDir() error {
 type group struct {
 	name     string
 	mappings []*mapping
+
+	// These counts are a group-level snapshot, both -1 until inspection
+	// succeeds. A directory mapping counts once, and only as linked when all
+	// its files are linked.
+	linkedMappings int
+	totalMappings  int
 }
 
 // link links every mapping in g, stopping at the first error.
@@ -168,7 +174,11 @@ func (g *group) addMapping(p *Project, m *mapping) error {
 }
 
 func newGroup(name string) group {
-	return group{name: name}
+	return group{
+		name:           name,
+		linkedMappings: -1,
+		totalMappings:  -1,
+	}
 }
 
 // mapping pairs a source path with a destination path and the operation
