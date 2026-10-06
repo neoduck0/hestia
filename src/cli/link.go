@@ -3,7 +3,6 @@ package cli
 import (
 	"errors"
 
-	"github.com/charmbracelet/log"
 	"github.com/neoduck0/hestia/src/backend"
 	"github.com/spf13/cobra"
 )
@@ -43,18 +42,19 @@ With --dry-run, the mappings file is checked but nothing is linked.`,
 
 		return nil
 	},
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cmd.SilenceUsage = true
 		project := backend.NewProject()
 		settings := backend.NewSettings()
 
 		copyFiles, err := cmd.Flags().GetBool("copy")
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 
 		symlinkFiles, err := cmd.Flags().GetBool("symlink")
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 
 		if copyFiles {
@@ -63,12 +63,12 @@ With --dry-run, the mappings file is checked but nothing is linked.`,
 			err = backend.SetOp(backend.OpSymlink, &settings.ForceOp)
 		}
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 
 		dryRun, err := cmd.Flags().GetBool("dry-run")
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 		settings.SetDryRun(dryRun)
 
@@ -79,18 +79,15 @@ With --dry-run, the mappings file is checked but nothing is linked.`,
 
 		all, err := cmd.Flags().GetBool("all")
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 
 		exclude, err := cmd.Flags().GetBool("exclude")
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 
-		err = project.Link(settings, argsSet, all, exclude)
-		if err != nil {
-			log.Fatal(err)
-		}
+		return project.Link(settings, argsSet, all, exclude)
 	},
 }
 

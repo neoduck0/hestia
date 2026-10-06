@@ -4,7 +4,6 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/charmbracelet/log"
 	"github.com/neoduck0/hestia/src/backend"
 	"github.com/spf13/cobra"
 )
@@ -23,25 +22,34 @@ working directory.
 
 Unless --no-portable is given, absolute paths under the home directory are
 stored with a leading "~" so the mappings file works for other users.`,
-	Args: cobra.ExactArgs(2),
-	Run: func(cmd *cobra.Command, args []string) {
+	Args: func(cmd *cobra.Command, args []string) error {
+		if err := cobra.ExactArgs(2)(cmd, args); err != nil {
+			return err
+		}
 		group, err := cmd.Flags().GetString("group")
 		if err != nil {
-			log.Fatal(err)
+			return err
+		}
+		if strings.TrimSpace(group) == "" {
+			return errors.New("group is required")
+		}
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cmd.SilenceUsage = true
+		group, err := cmd.Flags().GetString("group")
+		if err != nil {
+			return err
 		}
 
 		noPortable, err := cmd.Flags().GetBool("no-portable")
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 
 		create, err := cmd.Flags().GetBool("create")
 		if err != nil {
-			log.Fatal(err)
-		}
-
-		if strings.TrimSpace(group) == "" {
-			log.Fatal(errors.New("group is required"))
+			return err
 		}
 
 		project := backend.NewProject()
@@ -49,9 +57,7 @@ stored with a leading "~" so the mappings file works for other users.`,
 
 		settings.NoPortable = noPortable
 
-		if err = project.Add(settings, group, args[0], args[1], create); err != nil {
-			log.Fatal(err)
-		}
+		return project.Add(settings, group, args[0], args[1], create)
 	},
 }
 

@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"github.com/charmbracelet/log"
 	"github.com/neoduck0/hestia/src/backend"
 	"github.com/spf13/cobra"
 )
@@ -14,12 +13,15 @@ var initCmd = &cobra.Command{
 
 This creates a .hestia directory containing an empty mappings.conf file. An
 existing .hestia directory or mappings file is left as it is.`,
-	Args: cobra.NoArgs,
-	Run: func(cmd *cobra.Command, args []string) {
-		err := backend.Init()
-		if err != nil {
-			log.Fatal(err)
+	Args: func(cmd *cobra.Command, args []string) error {
+		if err := cobra.NoArgs(cmd, args); err != nil {
+			return err
 		}
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cmd.SilenceUsage = true
+		return backend.Init()
 	},
 }
 

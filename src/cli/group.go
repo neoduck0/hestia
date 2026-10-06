@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/charmbracelet/log"
 	"github.com/neoduck0/hestia/src/backend"
 	"github.com/spf13/cobra"
 )
@@ -17,7 +16,12 @@ var groupCmd = &cobra.Command{
 
 A group is a named set of mappings that are linked together.
 Use "group list" to print the group names in mappings-file order.`,
-	Args: cobra.NoArgs,
+	Args: func(cmd *cobra.Command, args []string) error {
+		if err := cobra.NoArgs(cmd, args); err != nil {
+			return err
+		}
+		return nil
+	},
 }
 
 var groupListCmd = &cobra.Command{
@@ -29,9 +33,14 @@ Groups are printed in mappings-file order, including empty groups. If there
 are no groups, nothing is printed. The mappings file is checked using the same
 validation as other commands, including checking that mapped sources exist.
 No files are changed.`,
-	Args:         cobra.NoArgs,
-	SilenceUsage: true,
+	Args: func(cmd *cobra.Command, args []string) error {
+		if err := cobra.NoArgs(cmd, args); err != nil {
+			return err
+		}
+		return nil
+	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		cmd.SilenceUsage = true
 		project := backend.NewProject()
 		groups, err := project.ListGroups(backend.NewSettings())
 		if err != nil {
@@ -50,14 +59,18 @@ var groupAddCmd = &cobra.Command{
 
 The name must not be blank, have leading or trailing whitespace, or contain
 brackets or line breaks, and must not already be used by another group.`,
-	Args: cobra.ExactArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
+	Args: func(cmd *cobra.Command, args []string) error {
+		if err := cobra.ExactArgs(1)(cmd, args); err != nil {
+			return err
+		}
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cmd.SilenceUsage = true
 		project := backend.NewProject()
 		settings := backend.NewSettings()
 
-		if err := project.AddGroup(settings, args[0]); err != nil {
-			log.Fatal(err)
-		}
+		return project.AddGroup(settings, args[0])
 	},
 }
 
@@ -68,14 +81,18 @@ var groupDeleteCmd = &cobra.Command{
 	Long: `Delete a group and all of its mappings from the mappings file.
 
 Files that were already linked are not removed.`,
-	Args: cobra.ExactArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
+	Args: func(cmd *cobra.Command, args []string) error {
+		if err := cobra.ExactArgs(1)(cmd, args); err != nil {
+			return err
+		}
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cmd.SilenceUsage = true
 		project := backend.NewProject()
 		settings := backend.NewSettings()
 
-		if err := project.Delete(settings, args[0]); err != nil {
-			log.Fatal(err)
-		}
+		return project.Delete(settings, args[0])
 	},
 }
 
@@ -87,14 +104,18 @@ var groupRenameCmd = &cobra.Command{
 
 The new name must follow the same rules as "group add" and must not already be
 used by another group.`,
-	Args: cobra.ExactArgs(2),
-	Run: func(cmd *cobra.Command, args []string) {
+	Args: func(cmd *cobra.Command, args []string) error {
+		if err := cobra.ExactArgs(2)(cmd, args); err != nil {
+			return err
+		}
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cmd.SilenceUsage = true
 		project := backend.NewProject()
 		settings := backend.NewSettings()
 
-		if err := project.RenameGroup(settings, args[0], args[1]); err != nil {
-			log.Fatal(err)
-		}
+		return project.RenameGroup(settings, args[0], args[1])
 	},
 }
 
