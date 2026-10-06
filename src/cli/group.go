@@ -1,6 +1,9 @@
 package cli
 
 import (
+	"fmt"
+	"io"
+
 	"github.com/charmbracelet/log"
 	"github.com/neoduck0/hestia/src/backend"
 	"github.com/spf13/cobra"
@@ -12,8 +15,31 @@ var groupCmd = &cobra.Command{
 	Short:   "Manage groups",
 	Long: `Manage the groups in the mappings file.
 
-A group is a named set of mappings that are linked together.`,
+A group is a named set of mappings that are linked together.
+Use "group list" to print the group names in mappings-file order.`,
 	Args: cobra.NoArgs,
+}
+
+var groupListCmd = &cobra.Command{
+	Use:   "list",
+	Short: "List the groups in the project",
+	Long: `List the groups in the project's mappings file, one name per line.
+
+Groups are printed in mappings-file order, including empty groups. If there
+are no groups, nothing is printed. The mappings file is checked using the same
+validation as other commands, including checking that mapped sources exist.
+No files are changed.`,
+	Args:         cobra.NoArgs,
+	SilenceUsage: true,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		project := backend.NewProject()
+		groups, err := project.ListGroups(backend.NewSettings())
+		if err != nil {
+			return err
+		}
+
+		return printGroups(cmd.OutOrStdout(), groups)
+	},
 }
 
 var groupAddCmd = &cobra.Command{
@@ -72,7 +98,18 @@ used by another group.`,
 	},
 }
 
+// printGroups writes one group name per line, stopping at the first write error.
+func printGroups(w io.Writer, groups []string) error {
+	for _, name := range groups {
+		if _, err := fmt.Fprintln(w, name); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func init() {
+	groupCmd.AddCommand(groupListCmd)
 	groupCmd.AddCommand(groupAddCmd)
 	groupCmd.AddCommand(groupDeleteCmd)
 	groupCmd.AddCommand(groupRenameCmd)

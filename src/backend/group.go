@@ -7,6 +7,20 @@ import (
 	"github.com/charmbracelet/log"
 )
 
+// ListGroups returns group names in mappings-file order, including empty
+// groups. It validates the mappings file without modifying it.
+func (p *Project) ListGroups(s Settings) ([]string, error) {
+	if err := p.readMappingsFile(s); err != nil {
+		return nil, err
+	}
+
+	names := make([]string, len(p.groups))
+	for i, g := range p.groups {
+		names[i] = g.name
+	}
+	return names, nil
+}
+
 // AddGroup creates an empty group named groupName and saves the mappings
 // file. It returns an error if a group with that name already exists.
 func (p *Project) AddGroup(s Settings, groupName string) error {
