@@ -2,7 +2,7 @@
 
 ## Documentation
 
-- Update relevant documentation when making code changes.
+- Update documentation only when a change affects the information it contains.
 
 ## Git
 
