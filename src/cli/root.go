@@ -12,10 +12,10 @@ import (
 const appName = "hst"
 
 // rootCmd is the top-level hst command. Its --verbose flag enables debug
-// logging for all subcommands. Handlers silence usage only after Cobra's
-// argument and flag validation, then return runtime errors for Execute to log.
+// logging for all subcommands. Usage is suppressed on errors, which Execute logs.
 var rootCmd = &cobra.Command{
 	SilenceErrors: true,
+	SilenceUsage:  true,
 	Use:           appName,
 	Short:         "Hestia links files from a project to where they belong",
 	Long: `Hestia links files from a project to where they belong.
@@ -29,8 +29,7 @@ expands to the home directory.
 Linking a group places each source at its destination, either as a symlink
 (the default) or as a copy. Directory sources are linked file by file.
 
-Argument-count and flag errors show command usage. Errors during command
-execution are reported without usage.`,
+Errors are reported without usage. Use --help to show command usage.`,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		verbose, err := cmd.Flags().GetBool("verbose")
 		if err != nil {
