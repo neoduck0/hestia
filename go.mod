@@ -2,6 +2,8 @@ module github.com/neoduck0/hestia
 
 go 1.21
 
+toolchain go1.25.0
+
 require (
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/charmbracelet/log v1.0.0

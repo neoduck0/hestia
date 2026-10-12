@@ -73,7 +73,9 @@ func CopyFile(src, dst string) error {
 	if err != nil {
 		return err
 	}
-	defer srcFile.Close()
+	defer func() {
+		_ = srcFile.Close()
+	}()
 
 	// A private staging directory avoids name collisions and stays on dst's
 	// filesystem so the final rename is atomic.
@@ -81,7 +83,9 @@ func CopyFile(src, dst string) error {
 	if err != nil {
 		return err
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		_ = os.RemoveAll(tempDir)
+	}()
 
 	tempPath := filepath.Join(tempDir, "file")
 
@@ -90,12 +94,12 @@ func CopyFile(src, dst string) error {
 		return err
 	}
 	if err := dstFile.Chmod(srcInfo.Mode().Perm()); err != nil {
-		dstFile.Close()
+		_ = dstFile.Close()
 		return err
 	}
 
 	if _, err = io.Copy(dstFile, srcFile); err != nil {
-		dstFile.Close()
+		_ = dstFile.Close()
 		return err
 	}
 
@@ -113,7 +117,9 @@ func SymlinkFile(target, dst string) error {
 	if err != nil {
 		return err
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		_ = os.RemoveAll(tempDir)
+	}()
 
 	tempPath := filepath.Join(tempDir, "link")
 	if err := os.Symlink(target, tempPath); err != nil {
@@ -139,7 +145,9 @@ func SetSymlinkTarget(src, target string) error {
 	if err != nil {
 		return err
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		_ = os.RemoveAll(tempDir)
+	}()
 
 	tempPath := filepath.Join(tempDir, "link")
 	if err := os.Symlink(target, tempPath); err != nil {
@@ -213,13 +221,17 @@ func sameContents(a, b string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	defer fileA.Close()
+	defer func() {
+		_ = fileA.Close()
+	}()
 
 	fileB, err := os.Open(b)
 	if err != nil {
 		return false, err
 	}
-	defer fileB.Close()
+	defer func() {
+		_ = fileB.Close()
+	}()
 
 	bufA := make([]byte, 32*1024)
 	bufB := make([]byte, 32*1024)

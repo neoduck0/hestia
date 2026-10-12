@@ -63,7 +63,7 @@ stored with a leading "~" so the mappings file works for other users.`,
 
 func init() {
 	addCmd.Flags().StringP("group", "g", "", "group to add the mapping to")
-	addCmd.MarkFlagRequired("group")
+	_ = addCmd.MarkFlagRequired("group")
 
 	addCmd.Flags().Bool("create", false, "create the group if it does not exist")
 

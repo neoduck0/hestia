@@ -35,35 +35,35 @@ func (p *Project) writeMappingsFile() error {
 	}
 	tempPath := tempFile.Name()
 	if err := tempFile.Chmod(mappingsInfo.Mode().Perm()); err != nil {
-		tempFile.Close()
-		os.Remove(tempPath)
+		_ = tempFile.Close()
+		_ = os.Remove(tempPath)
 		return err
 	}
 
 	for _, g := range p.groups {
 		if _, err := tempFile.WriteString("[" + g.name + "]\n"); err != nil {
-			tempFile.Close()
-			os.Remove(tempPath)
+			_ = tempFile.Close()
+			_ = os.Remove(tempPath)
 			return err
 		}
 
 		for _, m := range g.mappings {
 			line := fmt.Sprintf("%q -> %q\n", m.src, m.dst)
 			if _, err := tempFile.WriteString(line); err != nil {
-				tempFile.Close()
-				os.Remove(tempPath)
+				_ = tempFile.Close()
+				_ = os.Remove(tempPath)
 				return err
 			}
 		}
 	}
 
 	if err := tempFile.Close(); err != nil {
-		os.Remove(tempPath)
+		_ = os.Remove(tempPath)
 		return err
 	}
 
 	if err := os.Rename(tempPath, mappingsPath); err != nil {
-		os.Remove(tempPath)
+		_ = os.Remove(tempPath)
 		return err
 	}
 

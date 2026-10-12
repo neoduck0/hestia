@@ -21,7 +21,9 @@ func Init() error {
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func() {
+		_ = file.Close()
+	}()
 
 	log.Infof("initialized %s project: %v", projectName, filepath.Dir(file.Name()))
 	return nil
