@@ -1,6 +1,4 @@
-// Package backend implements Hestia projects: reading and writing the
-// mappings file, managing groups of mappings, and linking mapped sources to
-// their destinations.
+// Package backend manages Hestia projects, mappings, and file deployment.
 package backend
 
 import (
@@ -18,22 +16,17 @@ const (
 	projectName   = "Hestia"
 	hestiaDirName = ".hestia"
 
-	// defaultDirPerm and defaultFilePerm are the modes, before umask, used
-	// when creating directories and files.
 	defaultDirPerm  os.FileMode = 0o777
 	defaultFilePerm os.FileMode = 0o666
 )
 
-// Project is a Hestia project rooted at a .hestia directory. Its groups are
-// populated from the mappings file by each operation.
+// Project represents a Hestia project.
 type Project struct {
 	root string
 
 	groups []group
 }
 
-// findGroupIndex returns the index of the group named groupName in p.groups,
-// or -1 if there is none.
 func (p *Project) findGroupIndex(groupName string) int {
 	for i := range p.groups {
 		if p.groups[i].name == groupName {
@@ -43,53 +36,49 @@ func (p *Project) findGroupIndex(groupName string) int {
 	return -1
 }
 
-// NewProject returns an empty Project. The project root is located when an
-// operation is run.
+// NewProject returns an empty project.
 func NewProject() Project {
 	return Project{}
 }
 
 // Settings controls how project operations behave.
 type Settings struct {
-	// DryRun checks sources and enumerates directory entries without modifying
-	// destinations when linking. It does not check whether destination writes
-	// would succeed.
+	// DryRun validates mappings without linking files.
 	DryRun bool
 
-	// Force allows replacing existing destinations, which are otherwise skipped.
+	// Force allows replacing existing destinations.
 	Force bool
 
-	// DefaultOp is the operation used for mappings when ForceOp is unset.
+	// DefaultOp is the operation used when no override is specified.
 	DefaultOp Op
-	// ForceOp, if non-empty, overrides DefaultOp for every mapping.
+	// ForceOp overrides the operation for every mapping.
 	ForceOp Op
 
-	// NoPortable stores paths as given instead of collapsing the home
-	// directory to "~".
+	// NoPortable disables collapsing home-directory paths to "~".
 	NoPortable bool
 }
 
-// NewSettings returns Settings with DefaultOp set to the package default.
+// NewSettings returns the default project settings.
 func NewSettings() Settings {
 	return Settings{
 		DefaultOp: DefaultOp,
 	}
 }
 
-// Op is the operation used to place a source file at its destination.
+// Op is a file deployment operation.
 type Op string
 
 const (
-	// DefaultOp is the operation used when none is specified.
+	// DefaultOp is the operation used when no override is specified.
 	DefaultOp Op = OpSymlink
 
-	// OpSymlink places a symlink to the source at the destination.
+	// OpSymlink creates symlinks to source files.
 	OpSymlink Op = "symlink"
-	// OpCopy places a copy of the source at the destination.
+	// OpCopy copies source files.
 	OpCopy Op = "copy"
 )
 
-// SetOp stores op in v, returning an error if op is not a known Op.
+// SetOp stores a valid operation in v or returns an error.
 func SetOp(op Op, v *Op) error {
 	switch op {
 	case OpSymlink, OpCopy:
@@ -104,8 +93,6 @@ func (s *Settings) SetDryRun(b bool) {
 	s.DryRun = b
 }
 
-// findHestiaDir searches the working directory and its ancestors for a
-// .hestia directory and sets p.root to the first one found.
 func (p *Project) findHestiaDir() error {
 	wd, err := os.Getwd()
 	if err != nil {
@@ -140,14 +127,10 @@ type group struct {
 	name     string
 	mappings []*mapping
 
-	// These counts are a group-level snapshot, both -1 until inspection
-	// succeeds. A directory mapping counts once, and only as linked when all
-	// its files are linked.
 	linkedMappings int
 	totalMappings  int
 }
 
-// link links every mapping in g, stopping at the first error.
 func (g *group) link(p *Project, s Settings) error {
 	log.Debugf("linking group: %v", g.name)
 	for _, m := range g.mappings {
@@ -160,7 +143,6 @@ func (g *group) link(p *Project, s Settings) error {
 	return nil
 }
 
-// addMapping appends m to g, warning if its destination is already mapped in p.
 func (g *group) addMapping(p *Project, m *mapping) error {
 	exists, err := dstExists(p, m.dst)
 	if err != nil {
@@ -184,9 +166,6 @@ func newGroup(name string) group {
 	}
 }
 
-// mapping pairs a source path with a destination path and the operation
-// used to place it. Relative paths are resolved against the directory
-// containing the project's .hestia directory.
 type mapping struct {
 	src string
 	dst string
@@ -201,10 +180,6 @@ func (m *mapping) absDst(p *Project) (string, error) {
 	return fsutils.ExpandPath(m.dst, filepath.Dir(p.root))
 }
 
-// link places m's source at its destination using m.op, creating parent
-// directories as needed. A directory source is linked file by file. Existing
-// destinations are skipped unless s.Force is true; already matching symlinks
-// and copies are always left untouched.
 func (m *mapping) link(p *Project, s Settings) error {
 	absSrc, err := m.absSrc(p)
 	if err != nil {
@@ -313,8 +288,6 @@ func (m *mapping) link(p *Project, s Settings) error {
 	return nil
 }
 
-// newMapping returns a mapping from src to dst after checking that src
-// exists. The operation is s.ForceOp if set, otherwise s.DefaultOp.
 func newMapping(p *Project, s Settings, src, dst string) (*mapping, error) {
 	if err := verifySrc(p, src); err != nil {
 		return nil, err
@@ -334,7 +307,6 @@ func newMapping(p *Project, s Settings, src, dst string) (*mapping, error) {
 	}, nil
 }
 
-// verifySrc returns an error if src does not exist.
 func verifySrc(p *Project, src string) error {
 	absSrc, err := fsutils.ExpandPath(src, filepath.Dir(p.root))
 	if err != nil {
@@ -352,7 +324,6 @@ func verifySrc(p *Project, src string) error {
 	return nil
 }
 
-// dstExists reports whether dst is already mapped in p, comparing resolved paths.
 func dstExists(p *Project, dst string) (bool, error) {
 	absDst, err := fsutils.ExpandPath(dst, filepath.Dir(p.root))
 	if err != nil {

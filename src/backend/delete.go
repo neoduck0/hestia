@@ -7,9 +7,7 @@ import (
 	"github.com/charmbracelet/log"
 )
 
-// Delete removes the group named groupName and all of its mappings from the
-// mappings file. Files and symlinks already placed at destinations are left
-// untouched.
+// Delete removes a group and its mappings without removing deployed files.
 func (p *Project) Delete(s Settings, groupName string) error {
 	if err := p.readMappingsFile(s); err != nil {
 		return err

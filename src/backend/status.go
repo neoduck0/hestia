@@ -8,7 +8,7 @@ import (
 	"github.com/neoduck0/hestia/src/fsutils"
 )
 
-// GroupState describes a group's link state without prescribing display text.
+// GroupState describes a group's linking status.
 type GroupState uint8
 
 const (
@@ -22,18 +22,14 @@ const (
 	GroupEmpty
 )
 
-// GroupStatus describes how many mappings in a group are currently linked.
-// A matching symlink or copy counts as linked, regardless of the operation
-// used to create it. A directory mapping counts once, and only when all its
-// files are linked. Empty directories do not count as linked.
+// GroupStatus holds a group's name and linked/total mapping counts.
 type GroupStatus struct {
 	Name   string
 	Linked int
 	Total  int
 }
 
-// State returns the group state based only on the number of fully linked
-// mappings. Groups with no mappings are empty. Callers choose how to display it.
+// State returns the group's linking status.
 func (s GroupStatus) State() GroupState {
 	if s.Total == 0 {
 		return GroupEmpty
@@ -50,9 +46,7 @@ func (s GroupStatus) State() GroupState {
 	return GroupPartiallyLinked
 }
 
-// Status returns the status of every group in mappings-file order without
-// changing files. It uses the same mappings validation as other operations,
-// including requiring sources to exist.
+// Status returns each group's linking status without changing files.
 func (p *Project) Status(s Settings) ([]GroupStatus, error) {
 	if err := p.readMappingsFile(s); err != nil {
 		return nil, err
@@ -73,8 +67,6 @@ func (p *Project) Status(s Settings) ([]GroupStatus, error) {
 	return statuses, nil
 }
 
-// inspectState checks the group's mappings and stores only group-level counts.
-// Failed inspection leaves all counts at -1 rather than a partial snapshot.
 func (g *group) inspectState(p *Project) error {
 	g.linkedMappings, g.totalMappings = -1, -1
 
@@ -92,10 +84,6 @@ func (g *group) inspectState(p *Project) error {
 	return nil
 }
 
-// isLinked reports whether the mapping is fully linked, without storing state
-// on it. It checks the file paths used by link, accepting either a symlink or
-// a matching copy. Empty directories and directories with any unlinked files
-// are not linked. Checking stops at the first unlinked file.
 func (m *mapping) isLinked(p *Project) (bool, error) {
 	src, err := m.absSrc(p)
 	if err != nil {

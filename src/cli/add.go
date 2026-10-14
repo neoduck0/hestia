@@ -12,16 +12,6 @@ var addCmd = &cobra.Command{
 	Use:     "add <src> <dst>",
 	Aliases: []string{"a"},
 	Short:   "Add a mapping from src to dst to a group",
-	Long: `Add a mapping from src to dst to the group given by --group.
-
-The source must exist. Duplicate destinations are accepted with a warning.
-The group must exist unless --create is given.
-
-Relative paths are resolved against the directory containing .hestia, not the
-working directory.
-
-Unless --no-portable is given, absolute paths under the home directory are
-stored with a leading "~" so the mappings file works for other users.`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if err := cobra.ExactArgs(2)(cmd, args); err != nil {
 			return err

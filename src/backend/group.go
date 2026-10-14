@@ -7,8 +7,7 @@ import (
 	"github.com/charmbracelet/log"
 )
 
-// ListGroups returns group names in mappings-file order, including empty
-// groups. It validates the mappings file without modifying it.
+// ListGroups returns group names in mappings-file order.
 func (p *Project) ListGroups(s Settings) ([]string, error) {
 	if err := p.readMappingsFile(s); err != nil {
 		return nil, err
@@ -21,8 +20,7 @@ func (p *Project) ListGroups(s Settings) ([]string, error) {
 	return names, nil
 }
 
-// AddGroup creates an empty group named groupName and saves the mappings
-// file. It returns an error if a group with that name already exists.
+// AddGroup creates and saves an empty group.
 func (p *Project) AddGroup(s Settings, groupName string) error {
 	if err := p.readMappingsFile(s); err != nil {
 		return err
@@ -41,9 +39,7 @@ func (p *Project) AddGroup(s Settings, groupName string) error {
 	return nil
 }
 
-// RenameGroup renames the group oldName to newName and saves the mappings
-// file. It returns an error if oldName does not exist or newName belongs to
-// another group. Renaming an existing group to its current name is a no-op.
+// RenameGroup renames a group and saves the mappings.
 func (p *Project) RenameGroup(s Settings, oldName, newName string) error {
 	if err := validateGroupName(newName); err != nil {
 		return err
@@ -78,9 +74,7 @@ func (p *Project) RenameGroup(s Settings, oldName, newName string) error {
 	return nil
 }
 
-// createGroup validates name, appends a new empty group to p, and returns a
-// pointer to it. Subsequent appends to p.groups may reallocate the slice,
-// leaving the returned pointer referring to the old backing array.
+// The returned pointer may refer to an old backing array after appending to p.groups.
 func (p *Project) createGroup(name string) (*group, error) {
 	if err := validateGroupName(name); err != nil {
 		return nil, err
@@ -96,8 +90,6 @@ func (p *Project) createGroup(name string) (*group, error) {
 	return &p.groups[len(p.groups)-1], nil
 }
 
-// validateGroupName returns an error if name is blank, has surrounding
-// whitespace, or contains brackets or line breaks.
 func validateGroupName(name string) error {
 	if strings.TrimSpace(name) == "" {
 		return fmt.Errorf("group name is blank")

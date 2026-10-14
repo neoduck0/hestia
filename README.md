@@ -12,7 +12,8 @@ With Go installed, run from this repository:
 ./build.sh
 ```
 
-This installs `hst` system-wide to `/usr/local/bin`. To install for your user only:
+This installs `hst` system-wide to `/usr/local/bin`. To install for your user
+only:
 
 ```sh
 BIN_DIR="$HOME/.local/bin" ./build.sh
@@ -20,9 +21,21 @@ BIN_DIR="$HOME/.local/bin" ./build.sh
 
 Ensure the chosen directory is on your `PATH`.
 
-## Quick start
+## Usage
 
-From a directory containing your dotfiles (with an existing `bashrc` file):
+Start from a directory containing your dotfiles. You can organize them as files
+and subdirectories, for example:
+
+```text
+dotfiles/
+├── bashrc
+├── gitconfig
+└── config/
+    └── nvim/
+        └── init.lua
+```
+
+From inside `dotfiles/`, initialize a project and link a file:
 
 ```sh
 hst init
@@ -31,35 +44,11 @@ hst link shell
 hst status
 ```
 
-`init` creates `.hestia/mappings.conf`. Commands find the project by searching
-the current directory and its ancestors. Relative paths are resolved against
-the project directory; `~` expands to the home directory.
+`init` creates `.hestia/mappings.conf` inside the project directory to store
+named groups of source-to-destination mappings. Source files stay in your
+project; the example links `bashrc` to `~/.bashrc`.
 
-Mappings can also be edited directly:
-
-```text
-[shell]
-"bashrc" -> "~/.bashrc"
-```
-
-Sources must exist. Directory sources are deployed file by file, and destination
-parent directories are created as needed.
-
-Existing destinations are skipped unless `--force` (`-f`) is used. Already
-matching symlinks and copies are left untouched. Use `--copy --force` to update
-existing copies.
-
-## Commands
-
-- `hst link --all`: link every group.
-- `hst link --exclude shell`: link every group except `shell`.
-- `hst link shell --copy`: copy files instead of symlinking.
-- `hst status`: show linked/total mapping counts and each group's status.
-- `hst group list|add|delete|rename`: manage groups. Deleting a group does not
-  remove deployed files.
-
-Use `hst --help` or `hst <command> --help` for details, and `--verbose` for debug
-output.
+Use `hst --help` or `hst <command> --help` for available commands and flags.
 
 ## License
 

@@ -1,5 +1,4 @@
-// Package fsutils provides filesystem helpers for atomically placing files
-// and symlinks and for resolving home-relative paths.
+// Package fsutils provides file, symlink, and path helpers.
 package fsutils
 
 import (
@@ -15,8 +14,7 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-// FindDirFiles returns the paths, relative to dir, of every non-directory
-// entry under dir. Traversal does not follow symlinked directories.
+// FindDirFiles returns relative paths of non-directory entries under dir.
 func FindDirFiles(dir string) ([]string, error) {
 	fileInfo, err := os.Stat(dir)
 	if err != nil {
@@ -52,16 +50,13 @@ func FindDirFiles(dir string) ([]string, error) {
 	return files, nil
 }
 
-// CopyFile copies src to dst, preserving its permission bits but not ownership
-// or special mode bits. If src is a symlink, the link itself is copied rather
-// than its target. dst is replaced atomically by renaming a temporary file on
-// the same filesystem. The parent directory of dst must already exist.
+// CopyFile atomically replaces dst with a copy of src, preserving permissions
+// and copying symlinks as links. The destination's parent directory must exist.
 func CopyFile(src, dst string) error {
 	return copyFile(src, dst, true)
 }
 
-// CopyFileNoReplace is like CopyFile, but atomically refuses to replace an
-// existing destination, returning an error matching fs.ErrExist instead.
+// CopyFileNoReplace copies src to dst, returning fs.ErrExist if dst exists.
 func CopyFileNoReplace(src, dst string) error {
 	return copyFile(src, dst, false)
 }
@@ -89,8 +84,6 @@ func copyFile(src, dst string, replace bool) error {
 		_ = srcFile.Close()
 	}()
 
-	// A private staging directory avoids name collisions and stays on dst's
-	// filesystem so the final rename is atomic.
 	tempDir, err := os.MkdirTemp(filepath.Dir(dst), ".hestia-*.tmp")
 	if err != nil {
 		return err
@@ -123,13 +116,12 @@ func copyFile(src, dst string, replace bool) error {
 }
 
 // SymlinkFile atomically creates or replaces dst with a symlink to target.
-// The parent directory of dst must already exist.
+// The destination's parent directory must exist.
 func SymlinkFile(target, dst string) error {
 	return symlinkFile(target, dst, true)
 }
 
-// SymlinkFileNoReplace is like SymlinkFile, but atomically refuses to replace
-// an existing destination, returning an error matching fs.ErrExist instead.
+// SymlinkFileNoReplace creates a symlink, returning fs.ErrExist if dst exists.
 func SymlinkFileNoReplace(target, dst string) error {
 	return symlinkFile(target, dst, false)
 }
@@ -151,9 +143,8 @@ func symlinkFile(target, dst string, replace bool) error {
 	return placeFile(tempPath, dst, replace)
 }
 
-// placeFile publishes a staged file without a check-then-rename race. Do not
-// fall back to os.Rename when no-replace is unsupported: that could overwrite
-// a destination created concurrently.
+// Without replacement, do not fall back to os.Rename: it could overwrite a
+// destination created concurrently.
 func placeFile(src, dst string, replace bool) error {
 	if replace {
 		return os.Rename(src, dst)
@@ -165,7 +156,6 @@ func placeFile(src, dst string, replace bool) error {
 }
 
 // SetSymlinkTarget atomically repoints the existing symlink src to target.
-// It returns an error if src is not a symlink.
 func SetSymlinkTarget(src, target string) error {
 	srcInfo, err := os.Lstat(src)
 	if err != nil {
@@ -192,8 +182,7 @@ func SetSymlinkTarget(src, target string) error {
 	return os.Rename(tempPath, src)
 }
 
-// IsSymlinkTo reports whether path is a symlink whose target is exactly
-// target. A missing path is not an error.
+// IsSymlinkTo reports whether path is a symlink to target.
 func IsSymlinkTo(path, target string) (bool, error) {
 	info, err := os.Lstat(path)
 	if errors.Is(err, fs.ErrNotExist) {
@@ -215,10 +204,7 @@ func IsSymlinkTo(path, target string) (bool, error) {
 	return current == target, nil
 }
 
-// IsCopyOf reports whether path already matches what CopyFile would produce
-// from src: a symlink with the same target if src is a symlink, otherwise a
-// regular file with the same permission bits and contents. A missing
-// destination returns false without an error; a missing source is an error.
+// IsCopyOf reports whether path matches a copy of src, including permissions.
 func IsCopyOf(path, src string) (bool, error) {
 	srcInfo, err := os.Lstat(src)
 	if err != nil {
@@ -291,9 +277,7 @@ func sameContents(a, b string) (bool, error) {
 	}
 }
 
-// CollapsePath replaces a leading home directory in p with "~". It returns p
-// unchanged if p is not under the home directory or the home directory is
-// unknown.
+// CollapsePath replaces a leading home directory with "~".
 func CollapsePath(p string) string {
 	home, err := os.UserHomeDir()
 	if err != nil || home == "" {
@@ -312,9 +296,7 @@ func CollapsePath(p string) string {
 	return p
 }
 
-// DecollapsePath expands a leading "~" or "~/" in p to the home directory.
-// Other paths, including "~user" forms, are not expanded. For any path starting
-// with "~", it returns an error if the home directory cannot be determined.
+// DecollapsePath expands a leading "~" or "~/" to the home directory.
 func DecollapsePath(p string) (string, error) {
 	if !strings.HasPrefix(p, "~") {
 		return p, nil
@@ -336,10 +318,8 @@ func DecollapsePath(p string) (string, error) {
 	return p, nil
 }
 
-// ExpandPath returns p as a clean absolute path. Only a leading "~" or "~/"
-// is expanded; "~user" forms are not. Relative paths are joined to root, or
-// to the working directory if root is empty. The caller must supply an
-// absolute root when root is non-empty; this requirement is not checked.
+// ExpandPath expands home-relative paths and resolves relative paths against
+// an absolute root, or the working directory if root is empty.
 func ExpandPath(p, root string) (string, error) {
 	p, err := DecollapsePath(p)
 	if err != nil {

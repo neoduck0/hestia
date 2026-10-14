@@ -1,5 +1,4 @@
-// Package style provides ANSI text styling and terminal detection for CLI output
-// and logging. Callers use Enabled for their destination before applying styles.
+// Package style provides ANSI styling and terminal detection.
 package style
 
 import (
@@ -10,8 +9,7 @@ import (
 	"github.com/charmbracelet/x/term"
 )
 
-// Color is an ANSI foreground color code. Its zero value leaves the
-// foreground color unchanged.
+// Color is an ANSI foreground color code.
 type Color string
 
 // Standard ANSI foreground colors.
@@ -21,19 +19,14 @@ const (
 	Yellow Color = "33"
 )
 
-// Style combines ANSI text attributes for reuse across output destinations.
-// The zero value leaves text unchanged. Attributes can be combined, for example:
-//
-//	Style{Color: Green, Bold: true, Italic: true}.Wrap("linked")
+// Style combines ANSI text attributes; its zero value leaves text unchanged.
 type Style struct {
 	Color  Color
 	Bold   bool
 	Italic bool
 }
 
-// Enabled reports whether ANSI styling should be enabled for the actual
-// output destination. TERM=dumb, a non-empty NO_COLOR, and non-terminal writers
-// (including writers without a file descriptor) disable styling.
+// Enabled reports whether the output is a terminal with ANSI styling enabled.
 func Enabled(w io.Writer) bool {
 	if os.Getenv("TERM") == "dumb" || os.Getenv("NO_COLOR") != "" {
 		return false
@@ -42,9 +35,7 @@ func Enabled(w io.Writer) bool {
 	return ok && term.IsTerminal(f.Fd())
 }
 
-// Wrap applies the style to text and resets terminal styling afterward so
-// attributes do not leak into subsequent output. Wrap always applies the style;
-// callers should check Enabled to decide whether to use it.
+// Wrap applies the style to text and resets styling afterward.
 func (s Style) Wrap(text string) string {
 	var codes []string
 	if s.Color != "" {

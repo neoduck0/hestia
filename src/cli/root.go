@@ -1,5 +1,4 @@
-// Package cli defines the hst command-line interface on top of package
-// backend.
+// Package cli defines the hst command-line interface.
 package cli
 
 import (
@@ -11,25 +10,11 @@ import (
 
 const appName = "hst"
 
-// rootCmd is the top-level hst command. Its --verbose flag enables debug
-// logging for all subcommands. Usage is suppressed on errors, which Execute logs.
 var rootCmd = &cobra.Command{
 	SilenceErrors: true,
 	SilenceUsage:  true,
 	Use:           appName,
 	Short:         "Hestia links files from a project to where they belong",
-	Long: `Hestia links files from a project to where they belong.
-
-A project is a directory containing a .hestia directory, found by searching the
-working directory and its ancestors. Its .hestia/mappings.conf file holds named
-groups of mappings, each pairing a source path with a destination path.
-Relative paths are resolved against the directory containing .hestia, and "~"
-expands to the home directory.
-
-Linking a group places each source at its destination, either as a symlink
-(the default) or as a copy. Directory sources are linked file by file.
-
-Errors are reported without usage. Use --help to show command usage.`,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		verbose, err := cmd.Flags().GetBool("verbose")
 		if err != nil {
@@ -42,8 +27,7 @@ Errors are reported without usage. Use --help to show command usage.`,
 	},
 }
 
-// Execute runs the root command, logging errors and exiting with status 1
-// on failure.
+// Execute runs hst, logging errors and exiting with status 1 on failure.
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
 		log.Error(err)

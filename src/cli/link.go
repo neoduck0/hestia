@@ -11,17 +11,6 @@ var linkCmd = &cobra.Command{
 	Use:     "link [group...]",
 	Aliases: []string{"l"},
 	Short:   "Link the mappings of one or more groups",
-	Long: `Link the mappings of the given groups.
-
-With --all, every group is linked and no groups may be given. With --exclude,
-every group except the given ones is linked.
-
-Each source is placed at its destination as a symlink by default, or as a copy
-with --copy. Parent directories are created as needed. Existing destinations
-are skipped unless --force (-f) is used. Already matching symlinks and copies
-are left untouched. Use --copy --force to update existing copies.
-
-With --dry-run, the mappings file is checked but nothing is linked.`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		all, err := cmd.Flags().GetBool("all")
 		if err != nil {

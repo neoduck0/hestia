@@ -8,11 +8,8 @@ import (
 	"github.com/charmbracelet/log"
 )
 
-// Link links groups from the mappings file. If all is true every group is
-// linked; if exclude is true every group not in selectedGroups is linked;
-// otherwise only the groups in selectedGroups are linked. It returns an error
-// if selectedGroups names a group that does not exist. Link stops at the first
-// error and does not undo files or symlinks already placed.
+// Link deploys selected groups, all groups if all is set, or unselected groups
+// if exclude is set.
 func (p *Project) Link(s Settings, selectedGroups map[string]struct{}, all, exclude bool) error {
 	if err := p.readMappingsFile(s); err != nil {
 		return err
@@ -79,8 +76,6 @@ func (p *Project) linkExclude(s Settings, selectedGroups map[string]struct{}) er
 	return nil
 }
 
-// validateSelectedGroups returns an error listing any names in
-// selectedGroups that do not match a group in p.
 func (p *Project) validateSelectedGroups(selectedGroups map[string]struct{}) error {
 	if len(selectedGroups) == 0 {
 		return nil
