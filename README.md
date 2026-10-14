@@ -45,6 +45,10 @@ Mappings can also be edited directly:
 Sources must exist. Directory sources are deployed file by file, and destination
 parent directories are created as needed.
 
+Existing destinations are skipped unless `--force` (`-f`) is used. Already
+matching symlinks and copies are left untouched. Use `--copy --force` to update
+existing copies.
+
 ## Commands
 
 - `hst link --all`: link every group.

@@ -56,6 +56,9 @@ type Settings struct {
 	// would succeed.
 	DryRun bool
 
+	// Force allows replacing existing destinations, which are otherwise skipped.
+	Force bool
+
 	// DefaultOp is the operation used for mappings when ForceOp is unset.
 	DefaultOp Op
 	// ForceOp, if non-empty, overrides DefaultOp for every mapping.
@@ -200,8 +203,8 @@ func (m *mapping) absDst(p *Project) (string, error) {
 
 // link places m's source at its destination using m.op, creating parent
 // directories as needed. A directory source is linked file by file. Existing
-// symlinks that already point to the source, and existing copies that already
-// match it, are left untouched.
+// destinations are skipped unless s.Force is true; already matching symlinks
+// and copies are always left untouched.
 func (m *mapping) link(p *Project, s Settings) error {
 	absSrc, err := m.absSrc(p)
 	if err != nil {
@@ -246,6 +249,15 @@ func (m *mapping) link(p *Project, s Settings) error {
 			resolvedDst = filepath.Join(absDst, p)
 		}
 
+		if _, err := os.Lstat(resolvedDst); err == nil {
+			log.Infof("file exists in destination: %v", resolvedDst)
+			if !s.Force {
+				continue
+			}
+		} else if !errors.Is(err, fs.ErrNotExist) {
+			return fmt.Errorf("failed to check destination existence: %w", err)
+		}
+
 		log.Debugf("making directories: %v", filepath.Dir(resolvedDst))
 		err = os.MkdirAll(filepath.Dir(resolvedDst), defaultDirPerm)
 		if err != nil {
@@ -265,7 +277,11 @@ func (m *mapping) link(p *Project, s Settings) error {
 			}
 
 			log.Debugf("symlinking: %v -> %v", resolvedSrc, resolvedDst)
-			err = fsutils.SymlinkFile(resolvedSrc, resolvedDst)
+			if s.Force {
+				err = fsutils.SymlinkFile(resolvedSrc, resolvedDst)
+			} else {
+				err = fsutils.SymlinkFileNoReplace(resolvedSrc, resolvedDst)
+			}
 		case OpCopy:
 			var copied bool
 			copied, err = fsutils.IsCopyOf(resolvedDst, resolvedSrc)
@@ -278,9 +294,17 @@ func (m *mapping) link(p *Project, s Settings) error {
 			}
 
 			log.Debugf("copying: %v -> %v", resolvedSrc, resolvedDst)
-			err = fsutils.CopyFile(resolvedSrc, resolvedDst)
+			if s.Force {
+				err = fsutils.CopyFile(resolvedSrc, resolvedDst)
+			} else {
+				err = fsutils.CopyFileNoReplace(resolvedSrc, resolvedDst)
+			}
 		default:
 			return fmt.Errorf("unknown operation: %s", m.op)
+		}
+		if !s.Force && errors.Is(err, fs.ErrExist) {
+			log.Infof("file exists in destination: %v", resolvedDst)
+			continue
 		}
 		if err != nil {
 			return err

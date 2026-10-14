@@ -11,6 +11,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"golang.org/x/sys/unix"
 )
 
 // FindDirFiles returns the paths, relative to dir, of every non-directory
@@ -55,6 +57,16 @@ func FindDirFiles(dir string) ([]string, error) {
 // than its target. dst is replaced atomically by renaming a temporary file on
 // the same filesystem. The parent directory of dst must already exist.
 func CopyFile(src, dst string) error {
+	return copyFile(src, dst, true)
+}
+
+// CopyFileNoReplace is like CopyFile, but atomically refuses to replace an
+// existing destination, returning an error matching fs.ErrExist instead.
+func CopyFileNoReplace(src, dst string) error {
+	return copyFile(src, dst, false)
+}
+
+func copyFile(src, dst string, replace bool) error {
 	srcInfo, err := os.Lstat(src)
 	if err != nil {
 		return err
@@ -66,7 +78,7 @@ func CopyFile(src, dst string) error {
 			return err
 		}
 
-		return SymlinkFile(target, dst)
+		return symlinkFile(target, dst, replace)
 	}
 
 	srcFile, err := os.Open(src)
@@ -107,12 +119,22 @@ func CopyFile(src, dst string) error {
 		return err
 	}
 
-	return os.Rename(tempPath, dst)
+	return placeFile(tempPath, dst, replace)
 }
 
 // SymlinkFile atomically creates or replaces dst with a symlink to target.
 // The parent directory of dst must already exist.
 func SymlinkFile(target, dst string) error {
+	return symlinkFile(target, dst, true)
+}
+
+// SymlinkFileNoReplace is like SymlinkFile, but atomically refuses to replace
+// an existing destination, returning an error matching fs.ErrExist instead.
+func SymlinkFileNoReplace(target, dst string) error {
+	return symlinkFile(target, dst, false)
+}
+
+func symlinkFile(target, dst string, replace bool) error {
 	tempDir, err := os.MkdirTemp(filepath.Dir(dst), ".hestia-*.tmp")
 	if err != nil {
 		return err
@@ -126,7 +148,20 @@ func SymlinkFile(target, dst string) error {
 		return err
 	}
 
-	return os.Rename(tempPath, dst)
+	return placeFile(tempPath, dst, replace)
+}
+
+// placeFile publishes a staged file without a check-then-rename race. Do not
+// fall back to os.Rename when no-replace is unsupported: that could overwrite
+// a destination created concurrently.
+func placeFile(src, dst string, replace bool) error {
+	if replace {
+		return os.Rename(src, dst)
+	}
+	if err := unix.Renameat2(unix.AT_FDCWD, src, unix.AT_FDCWD, dst, unix.RENAME_NOREPLACE); err != nil {
+		return &os.LinkError{Op: "renameat2", Old: src, New: dst, Err: err}
+	}
+	return nil
 }
 
 // SetSymlinkTarget atomically repoints the existing symlink src to target.

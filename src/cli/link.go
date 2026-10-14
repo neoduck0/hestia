@@ -17,8 +17,9 @@ With --all, every group is linked and no groups may be given. With --exclude,
 every group except the given ones is linked.
 
 Each source is placed at its destination as a symlink by default, or as a copy
-with --copy. Parent directories are created as needed. When symlinking,
-destinations that already link to their source are left untouched.
+with --copy. Parent directories are created as needed. Existing destinations
+are skipped unless --force (-f) is used. Already matching symlinks and copies
+are left untouched. Use --copy --force to update existing copies.
 
 With --dry-run, the mappings file is checked but nothing is linked.`,
 	Args: func(cmd *cobra.Command, args []string) error {
@@ -72,6 +73,12 @@ With --dry-run, the mappings file is checked but nothing is linked.`,
 		}
 		settings.SetDryRun(dryRun)
 
+		force, err := cmd.Flags().GetBool("force")
+		if err != nil {
+			return err
+		}
+		settings.Force = force
+
 		argsSet := make(map[string]struct{}, len(args))
 		for _, arg := range args {
 			argsSet[arg] = struct{}{}
@@ -93,6 +100,8 @@ With --dry-run, the mappings file is checked but nothing is linked.`,
 
 func init() {
 	linkCmd.Flags().Bool("dry-run", false, "check the mappings file without linking anything")
+
+	linkCmd.Flags().BoolP("force", "f", false, "force linking even if the target already exists")
 
 	linkCmd.Flags().BoolP("copy", "c", false, "copy every mapping instead of symlinking")
 	linkCmd.Flags().BoolP("symlink", "s", false, "symlink every mapping (the default)")
