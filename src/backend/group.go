@@ -74,7 +74,6 @@ func (p *Project) RenameGroup(s Settings, oldName, newName string) error {
 	return nil
 }
 
-// The returned pointer may refer to an old backing array after appending to p.groups.
 func (p *Project) createGroup(name string) (*group, error) {
 	if err := validateGroupName(name); err != nil {
 		return nil, err
@@ -87,7 +86,7 @@ func (p *Project) createGroup(name string) (*group, error) {
 	log.Debugf("creating group: %v", name)
 	p.groups = append(p.groups, newGroup(name))
 
-	return &p.groups[len(p.groups)-1], nil
+	return p.groups[len(p.groups)-1], nil
 }
 
 func validateGroupName(name string) error {

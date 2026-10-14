@@ -24,7 +24,7 @@ const (
 type Project struct {
 	root string
 
-	groups []group
+	groups []*group
 }
 
 func (p *Project) findGroupIndex(groupName string) int {
@@ -158,8 +158,8 @@ func (g *group) addMapping(p *Project, m *mapping) error {
 	return nil
 }
 
-func newGroup(name string) group {
-	return group{
+func newGroup(name string) *group {
+	return &group{
 		name:           name,
 		linkedMappings: -1,
 		totalMappings:  -1,

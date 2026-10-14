@@ -15,7 +15,7 @@ func (p *Project) Add(s Settings, groupName, src, dst string, create bool) error
 
 	var chosenGroup *group
 	if groupIndex := p.findGroupIndex(groupName); groupIndex != -1 {
-		chosenGroup = &p.groups[groupIndex]
+		chosenGroup = p.groups[groupIndex]
 	} else if create {
 		var err error
 		if chosenGroup, err = p.createGroup(groupName); err != nil {

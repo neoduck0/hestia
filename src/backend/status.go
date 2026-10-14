@@ -53,8 +53,7 @@ func (p *Project) Status(s Settings) ([]GroupStatus, error) {
 	}
 
 	statuses := make([]GroupStatus, 0, len(p.groups))
-	for i := range p.groups {
-		g := &p.groups[i]
+	for _, g := range p.groups {
 		if err := g.inspectState(p); err != nil {
 			return nil, err
 		}

@@ -79,7 +79,7 @@ func (p *Project) readMappingsFile(s Settings) error {
 		return err
 	}
 
-	p.groups = []group{}
+	p.groups = []*group{}
 
 	var currentGroup *group
 	for i, line := range strings.Split(string(fileBytes), "\n") {
@@ -100,7 +100,7 @@ func (p *Project) readMappingsFile(s Settings) error {
 			}
 
 			p.groups = append(p.groups, newGroup(groupName))
-			currentGroup = &p.groups[len(p.groups)-1]
+			currentGroup = p.groups[len(p.groups)-1]
 			continue
 		}
 
