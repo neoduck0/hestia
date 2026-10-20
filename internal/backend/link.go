@@ -48,8 +48,8 @@ func (p *Project) linkAll(s Settings) error {
 
 func (p *Project) linkInclude(s Settings, selectedGroups map[string]struct{}) error {
 	for _, group := range p.groups {
-		if _, ok := selectedGroups[group.name]; !ok {
-			log.Debugf("group not included: %v", group.name)
+		if _, ok := selectedGroups[group.Name]; !ok {
+			log.Debugf("group not included: %v", group.Name)
 			continue
 		}
 
@@ -63,8 +63,8 @@ func (p *Project) linkInclude(s Settings, selectedGroups map[string]struct{}) er
 
 func (p *Project) linkExclude(s Settings, selectedGroups map[string]struct{}) error {
 	for _, group := range p.groups {
-		if _, ok := selectedGroups[group.name]; ok {
-			log.Debugf("group excluded: %v", group.name)
+		if _, ok := selectedGroups[group.Name]; ok {
+			log.Debugf("group excluded: %v", group.Name)
 			continue
 		}
 
@@ -84,7 +84,7 @@ func (p *Project) validateSelectedGroups(selectedGroups map[string]struct{}) err
 	notFound := maps.Clone(selectedGroups)
 
 	for _, group := range p.groups {
-		delete(notFound, group.name)
+		delete(notFound, group.Name)
 	}
 
 	if len(notFound) == 0 {

@@ -16,14 +16,19 @@ func Init() error {
 		return err
 	}
 
-	file, err := os.OpenFile(filepath.Join(hestiaDirName, mappingsFileName), os.O_RDONLY|os.O_CREATE, defaultFilePerm)
-	if err != nil {
+	file, err := os.OpenFile(filepath.Join(hestiaDirName, mappingsFileName), os.O_WRONLY|os.O_CREATE|os.O_EXCL, defaultFilePerm)
+	if err != nil && !errors.Is(err, fs.ErrExist) {
 		return err
 	}
-	defer func() {
-		_ = file.Close()
-	}()
+	if err == nil {
+		defer func() {
+			_ = file.Close()
+		}()
+		if _, err := file.WriteString("[]\n"); err != nil {
+			return err
+		}
+	}
 
-	log.Infof("initialized %s project: %v", projectName, filepath.Dir(file.Name()))
+	log.Infof("initialized %s project: %v", projectName, hestiaDirName)
 	return nil
 }

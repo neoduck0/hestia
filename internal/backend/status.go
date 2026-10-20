@@ -58,7 +58,7 @@ func (p *Project) Status(s Settings) ([]GroupStatus, error) {
 			return nil, err
 		}
 		statuses = append(statuses, GroupStatus{
-			Name:   g.name,
+			Name:   g.Name,
 			Linked: g.linkedMappings,
 			Total:  g.totalMappings,
 		})
@@ -70,16 +70,16 @@ func (g *group) inspectState(p *Project) error {
 	g.linkedMappings, g.totalMappings = -1, -1
 
 	linkedMappings := 0
-	for _, m := range g.mappings {
+	for _, m := range g.Mappings {
 		linked, err := m.isLinked(p)
 		if err != nil {
-			return fmt.Errorf("group %q, mapping %q -> %q: %w", g.name, m.src, m.dst, err)
+			return fmt.Errorf("group %q, mapping %q -> %q: %w", g.Name, m.Src, m.Dst, err)
 		}
 		if linked {
 			linkedMappings++
 		}
 	}
-	g.linkedMappings, g.totalMappings = linkedMappings, len(g.mappings)
+	g.linkedMappings, g.totalMappings = linkedMappings, len(g.Mappings)
 	return nil
 }
 

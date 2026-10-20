@@ -1,17 +1,17 @@
 package backend
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 
 	"github.com/charmbracelet/log"
 )
 
 const (
-	mappingsFileName = "mappings.conf"
+	mappingsFileName = "mappings.json"
 )
 
 func (p *Project) writeMappingsFile() error {
@@ -37,21 +37,12 @@ func (p *Project) writeMappingsFile() error {
 		return err
 	}
 
-	for _, g := range p.groups {
-		if _, err := tempFile.WriteString("[" + g.name + "]\n"); err != nil {
-			_ = tempFile.Close()
-			_ = os.Remove(tempPath)
-			return err
-		}
-
-		for _, m := range g.mappings {
-			line := fmt.Sprintf("%q -> %q\n", m.src, m.dst)
-			if _, err := tempFile.WriteString(line); err != nil {
-				_ = tempFile.Close()
-				_ = os.Remove(tempPath)
-				return err
-			}
-		}
+	encoder := json.NewEncoder(tempFile)
+	encoder.SetIndent("", "  ")
+	if err := encoder.Encode(p.groups); err != nil {
+		_ = tempFile.Close()
+		_ = os.Remove(tempPath)
+		return err
 	}
 
 	if err := tempFile.Close(); err != nil {
@@ -81,133 +72,37 @@ func (p *Project) readMappingsFile(s Settings) error {
 
 	p.groups = []*group{}
 
-	var currentGroup *group
-	for i, line := range strings.Split(string(fileBytes), "\n") {
-		lineNumber := i + 1
+	var groups []*group
+	if err := json.Unmarshal(fileBytes, &groups); err != nil {
+		return fmt.Errorf("%s: %w", mappingsFileName, err)
+	}
 
-		trimmed := strings.TrimSpace(line)
-		if trimmed == "" {
-			continue
+	for _, g := range groups {
+		if g == nil {
+			return fmt.Errorf("%s: null group", mappingsFileName)
+		}
+		if err := validateGroupName(g.Name); err != nil {
+			return fmt.Errorf("%s: %w", mappingsFileName, err)
+		}
+		if p.findGroupIndex(g.Name) != -1 {
+			return fmt.Errorf("%s: duplicate group: %s", mappingsFileName, g.Name)
 		}
 
-		if strings.HasPrefix(trimmed, "[") {
-			groupName, err := parseGroupLine(trimmed)
+		currentGroup := newGroup(g.Name)
+		p.groups = append(p.groups, currentGroup)
+		for _, m := range g.Mappings {
+			if m == nil || strings.TrimSpace(m.Src) == "" || strings.TrimSpace(m.Dst) == "" {
+				return fmt.Errorf("%s: blank source or destination in group: %s", mappingsFileName, g.Name)
+			}
+			mapping, err := newMapping(p, s, m.Src, m.Dst)
 			if err != nil {
-				return fmt.Errorf("%s:%d: %w", mappingsFileName, lineNumber, err)
+				return fmt.Errorf("%s: %w", mappingsFileName, err)
 			}
-			if p.findGroupIndex(groupName) != -1 {
-				return fmt.Errorf("%s:%d: duplicate group: %s", mappingsFileName, lineNumber, groupName)
+			if err := currentGroup.addMapping(p, mapping); err != nil {
+				return fmt.Errorf("%s: %w", mappingsFileName, err)
 			}
-
-			p.groups = append(p.groups, newGroup(groupName))
-			currentGroup = p.groups[len(p.groups)-1]
-			continue
-		}
-
-		src, dst, err := parseMappingLine(trimmed)
-		if err != nil {
-			return fmt.Errorf("%s:%d: %w", mappingsFileName, lineNumber, err)
-		}
-		if currentGroup == nil {
-			return fmt.Errorf("%s:%d: mapping is without a group: %s", mappingsFileName, lineNumber, trimmed)
-		}
-
-		mapping, err := newMapping(p, s, src, dst)
-		if err != nil {
-			return fmt.Errorf("%s:%d: %w", mappingsFileName, lineNumber, err)
-		}
-		if err := currentGroup.addMapping(p, mapping); err != nil {
-			return fmt.Errorf("%s:%d: %w", mappingsFileName, lineNumber, err)
 		}
 	}
 
 	return nil
-}
-
-func parseGroupLine(line string) (string, error) {
-	if !strings.HasPrefix(line, "[") || !strings.HasSuffix(line, "]") {
-		return "", fmt.Errorf("malformed group line: %s", line)
-	}
-
-	name := strings.TrimSpace(line[1 : len(line)-1])
-	if name == "" || strings.ContainsAny(name, "[]") {
-		return "", fmt.Errorf("malformed group name: %s", line)
-	}
-
-	return name, nil
-}
-
-func parseMappingLine(line string) (string, string, error) {
-	var fields [2]string
-
-	i := 0
-	for f := range fields {
-		fieldName := "source"
-		if f == 1 {
-			fieldName = "destination"
-		}
-
-		for i < len(line) && (line[i] == ' ' || line[i] == '\t') {
-			i++
-		}
-
-		if f == 1 {
-			if !strings.HasPrefix(line[i:], "->") {
-				return "", "", fmt.Errorf("missing \"->\" separator: %s", line)
-			}
-
-			i += 2
-			for i < len(line) && (line[i] == ' ' || line[i] == '\t') {
-				i++
-			}
-		}
-
-		if i < len(line) && line[i] == '"' {
-			end := i + 1
-			for end < len(line) {
-				if line[end] == '\\' {
-					end += 2
-					continue
-				}
-				if line[end] == '"' {
-					break
-				}
-				end++
-			}
-			if end >= len(line) {
-				return "", "", fmt.Errorf("unterminated quoted value: %s", line)
-			}
-
-			value, err := strconv.Unquote(line[i : end+1])
-			if err != nil {
-				return "", "", fmt.Errorf("malformed quoted value: %s", line[i:end+1])
-			}
-			if strings.TrimSpace(value) == "" {
-				return "", "", fmt.Errorf("blank %s value: %s", fieldName, line)
-			}
-
-			fields[f] = value
-			i = end + 1
-			continue
-		}
-
-		start := i
-		for i < len(line) && line[i] != ' ' && line[i] != '\t' && !strings.HasPrefix(line[i:], "->") {
-			i++
-		}
-		if i == start {
-			return "", "", fmt.Errorf("missing %s value: %s", fieldName, line)
-		}
-
-		fields[f] = line[start:i]
-	}
-
-	for i < len(line) && (line[i] == ' ' || line[i] == '\t') {
-		i++
-	}
-	if i != len(line) {
-		return "", "", fmt.Errorf("unexpected text after mapping: %s", line)
-	}
-
-	return fields[0], fields[1], nil
 }

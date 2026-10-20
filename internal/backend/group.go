@@ -15,7 +15,7 @@ func (p *Project) ListGroups(s Settings) ([]string, error) {
 
 	names := make([]string, len(p.groups))
 	for i, g := range p.groups {
-		names[i] = g.name
+		names[i] = g.Name
 	}
 	return names, nil
 }
@@ -63,7 +63,7 @@ func (p *Project) RenameGroup(s Settings, oldName, newName string) error {
 	}
 
 	log.Debugf("renaming group: %v -> %v", oldName, newName)
-	p.groups[groupIndex].name = newName
+	p.groups[groupIndex].Name = newName
 
 	if err := p.writeMappingsFile(); err != nil {
 		return err

@@ -48,7 +48,7 @@ hst link shell
 hst status
 ```
 
-`init` creates `.hestia/mappings.conf` inside the project directory to store
+`init` creates `.hestia/mappings.json` inside the project directory to store
 named groups of source-to-destination mappings. Source files stay in your
 project; the example links `bashrc` to `~/.bashrc`.
 

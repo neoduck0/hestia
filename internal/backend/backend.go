@@ -29,7 +29,7 @@ type Project struct {
 
 func (p *Project) findGroupIndex(groupName string) int {
 	for i := range p.groups {
-		if p.groups[i].name == groupName {
+		if p.groups[i].Name == groupName {
 			return i
 		}
 	}
@@ -124,60 +124,61 @@ func (p *Project) findHestiaDir() error {
 }
 
 type group struct {
-	name     string
-	mappings []*mapping
+	Name     string     `json:"name"`
+	Mappings []*mapping `json:"mappings"`
 
 	linkedMappings int
 	totalMappings  int
 }
 
 func (g *group) link(p *Project, s Settings) error {
-	log.Debugf("linking group: %v", g.name)
-	for _, m := range g.mappings {
+	log.Debugf("linking group: %v", g.Name)
+	for _, m := range g.Mappings {
 		err := m.link(p, s)
 		if err != nil {
 			return err
 		}
 	}
-	log.Infof("linked group: %v", g.name)
+	log.Infof("linked group: %v", g.Name)
 	return nil
 }
 
 func (g *group) addMapping(p *Project, m *mapping) error {
-	exists, err := dstExists(p, m.dst)
+	exists, err := dstExists(p, m.Dst)
 	if err != nil {
 		return err
 	}
 
 	if exists {
-		log.Warnf("another mapping has the same destination: %s", m.dst)
+		log.Warnf("another mapping has the same destination: %s", m.Dst)
 	}
 
-	g.mappings = append(g.mappings, m)
+	g.Mappings = append(g.Mappings, m)
 
 	return nil
 }
 
 func newGroup(name string) *group {
 	return &group{
-		name:           name,
+		Name:           name,
+		Mappings:       []*mapping{},
 		linkedMappings: -1,
 		totalMappings:  -1,
 	}
 }
 
 type mapping struct {
-	src string
-	dst string
+	Src string `json:"src"`
+	Dst string `json:"dst"`
 	op  Op
 }
 
 func (m *mapping) absSrc(p *Project) (string, error) {
-	return fsutils.ExpandPath(m.src, filepath.Dir(p.root))
+	return fsutils.ExpandPath(m.Src, filepath.Dir(p.root))
 }
 
 func (m *mapping) absDst(p *Project) (string, error) {
-	return fsutils.ExpandPath(m.dst, filepath.Dir(p.root))
+	return fsutils.ExpandPath(m.Dst, filepath.Dir(p.root))
 }
 
 func (m *mapping) link(p *Project, s Settings) error {
@@ -209,7 +210,7 @@ func (m *mapping) link(p *Project, s Settings) error {
 	}
 
 	if s.DryRun {
-		log.Infof("dry run skipped: %v", m.dst)
+		log.Infof("dry run skipped: %v", m.Dst)
 		return nil
 	}
 
@@ -301,8 +302,8 @@ func newMapping(p *Project, s Settings, src, dst string) (*mapping, error) {
 	}
 
 	return &mapping{
-		src: src,
-		dst: dst,
+		Src: src,
+		Dst: dst,
 		op:  op,
 	}, nil
 }
@@ -331,7 +332,7 @@ func dstExists(p *Project, dst string) (bool, error) {
 	}
 
 	for _, g := range p.groups {
-		for _, m := range g.mappings {
+		for _, m := range g.Mappings {
 			d, err := m.absDst(p)
 			if err != nil {
 				return false, err
