@@ -2,25 +2,27 @@ package backend
 
 import (
 	"errors"
+	"fmt"
 	"io/fs"
 	"os"
-	"path/filepath"
 
 	"github.com/charmbracelet/log"
 )
 
 // Init initializes a project in the working directory, preserving existing files.
 func Init() error {
-	err := os.Mkdir(hestiaDirName, defaultDirPerm)
-	if err != nil && !errors.Is(err, fs.ErrExist) {
+	file, err := os.OpenFile(mappingsFileName, os.O_WRONLY|os.O_CREATE|os.O_EXCL, defaultFilePerm)
+	if errors.Is(err, fs.ErrExist) {
+		info, err := os.Stat(mappingsFileName)
+		if err != nil {
+			return err
+		}
+		if !info.Mode().IsRegular() {
+			return fmt.Errorf("%s must be a regular JSON file", mappingsFileName)
+		}
+	} else if err != nil {
 		return err
-	}
-
-	file, err := os.OpenFile(filepath.Join(hestiaDirName, mappingsFileName), os.O_WRONLY|os.O_CREATE|os.O_EXCL, defaultFilePerm)
-	if err != nil && !errors.Is(err, fs.ErrExist) {
-		return err
-	}
-	if err == nil {
+	} else {
 		defer func() {
 			_ = file.Close()
 		}()
@@ -29,6 +31,6 @@ func Init() error {
 		}
 	}
 
-	log.Infof("initialized %s project: %v", projectName, hestiaDirName)
+	log.Infof("initialized %s project: %v", projectName, mappingsFileName)
 	return nil
 }

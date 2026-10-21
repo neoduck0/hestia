@@ -10,12 +10,8 @@ import (
 	"github.com/charmbracelet/log"
 )
 
-const (
-	mappingsFileName = "mappings.json"
-)
-
 func (p *Project) writeMappingsFile() error {
-	if err := p.findHestiaDir(); err != nil {
+	if err := p.findProjectRoot(); err != nil {
 		return err
 	}
 
@@ -59,7 +55,7 @@ func (p *Project) writeMappingsFile() error {
 }
 
 func (p *Project) readMappingsFile(s Settings) error {
-	if err := p.findHestiaDir(); err != nil {
+	if err := p.findProjectRoot(); err != nil {
 		return err
 	}
 

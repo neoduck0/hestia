@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	projectName   = "Hestia"
-	hestiaDirName = ".hestia"
+	projectName      = "Hestia"
+	mappingsFileName = ".hestia"
 
 	defaultDirPerm  os.FileMode = 0o777
 	defaultFilePerm os.FileMode = 0o666
@@ -93,7 +93,7 @@ func (s *Settings) SetDryRun(b bool) {
 	s.DryRun = b
 }
 
-func (p *Project) findHestiaDir() error {
+func (p *Project) findProjectRoot() error {
 	wd, err := os.Getwd()
 	if err != nil {
 		return err
@@ -101,12 +101,12 @@ func (p *Project) findHestiaDir() error {
 
 	dir := wd
 	for {
-		candidate := filepath.Join(dir, hestiaDirName)
+		candidate := filepath.Join(dir, mappingsFileName)
 		info, err := os.Stat(candidate)
 		if err == nil {
-			if info.IsDir() {
-				p.root = candidate
-				log.Debugf("found hestia directory: %v", p.root)
+			if info.Mode().IsRegular() {
+				p.root = dir
+				log.Debugf("found hestia file: %v", candidate)
 				return nil
 			}
 		} else if !errors.Is(err, fs.ErrNotExist) {
@@ -120,7 +120,7 @@ func (p *Project) findHestiaDir() error {
 		dir = parent
 	}
 
-	return errors.New("hestia directory not found")
+	return errors.New("hestia project file (.hestia) not found")
 }
 
 type group struct {
@@ -174,11 +174,11 @@ type mapping struct {
 }
 
 func (m *mapping) absSrc(p *Project) (string, error) {
-	return fsutils.ExpandPath(m.Src, filepath.Dir(p.root))
+	return fsutils.ExpandPath(m.Src, p.root)
 }
 
 func (m *mapping) absDst(p *Project) (string, error) {
-	return fsutils.ExpandPath(m.Dst, filepath.Dir(p.root))
+	return fsutils.ExpandPath(m.Dst, p.root)
 }
 
 func (m *mapping) link(p *Project, s Settings) error {
@@ -309,7 +309,7 @@ func newMapping(p *Project, s Settings, src, dst string) (*mapping, error) {
 }
 
 func verifySrc(p *Project, src string) error {
-	absSrc, err := fsutils.ExpandPath(src, filepath.Dir(p.root))
+	absSrc, err := fsutils.ExpandPath(src, p.root)
 	if err != nil {
 		return err
 	}
@@ -326,7 +326,7 @@ func verifySrc(p *Project, src string) error {
 }
 
 func dstExists(p *Project, dst string) (bool, error) {
-	absDst, err := fsutils.ExpandPath(dst, filepath.Dir(p.root))
+	absDst, err := fsutils.ExpandPath(dst, p.root)
 	if err != nil {
 		return false, err
 	}
